@@ -263,7 +263,11 @@ def main():
 
     layout = layouts.get_layout(args.layout)
 
-    while sprites:
+    oldlen = 0
+
+    while sprites and len(sprites) != oldlen:
+        oldlen = len(sprites)
+
         sheet = layouts.Sheet(
             min_size = args.min_size,
             max_size = args.max_size,
@@ -277,13 +281,22 @@ def main():
 
         sprites = sheet.add(sprites)
 
+    if sprites:
+        print "Couldn't pack:"
+        for spr in sprites:
+            print '\t', spr.name
+
     ########################################################################
     ## Phase 3 - Scale, quantize, and compress textures
 
     if args.scale:
+        ## do main process twice:
+        ##   first with filename suffix '@2x',
+        ##   then with sheets at half scale
         pass
 
     if args.compress:
+        ## ignore most of the other options and generate compressed textures
         pass
 
     numsheets = len(sheets)
@@ -296,6 +309,9 @@ def main():
     print numsheets, 'sheet(s):'
 
     for i, sheet in enumerate(sheets):
+        if not sheet.sprites:
+            continue
+
         texture = Image.new('RGBA', sheet.size) # args.color_depth
 
         for sprite in sheet.sprites:
