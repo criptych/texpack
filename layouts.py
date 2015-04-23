@@ -340,7 +340,7 @@ class SkylineLayout(Layout):
 LAYOUTS = {
     'shelf': ShelfLayout,
     'stack': StackLayout,
-    'maxrects': MaxRectsLayout,
+    'max-rects': MaxRectsLayout,
     'skyline': SkylineLayout,
 }
 
