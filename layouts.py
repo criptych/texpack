@@ -89,7 +89,12 @@ class Rect(object):
         return r
 
     def union(self, rect):
-        return
+        r = Rect()
+        r.left   = min(self.left,   rect.left  )
+        r.top    = min(self.top,    rect.top   )
+        r.right  = max(self.right,  rect.right )
+        r.bottom = max(self.bottom, rect.bottom)
+        return r
 
 ################################################################################
 
