@@ -165,30 +165,32 @@ class Sheet(object):
 
     def grow(self):
         maxw, maxh = self.max_size
-        w, h = self.size
-        w = max(1, w * 2)
-        h = max(1, h * 2)
+        oldw, oldh = self.size
+        w = max(1, oldw * 2)
+        h = max(1, oldh * 2)
         if maxw > 0: w = min(w, maxw)
         if maxh > 0: h = min(h, maxh)
         if not self.npot:
             w = get_next_power_of_2(w)
             h = get_next_power_of_2(h)
         self.size = w, h
+        return w > oldw or h > oldh
 
     def check(self, rect):
         w, h = self.size
         rw, rh = rect.x + rect.w, rect.y + rect.h
-        return rw > w or rh > h
+        return rw <= w and rh <= h
 
     def add(self, sprites):
         remain = []
 
         if self.layout:
             for s in sprites:
-                if self.layout.add(s):
+                while not self.check(s.rect):
+                    if not self.grow():
+                        break
+                if self.check(s.rect) and self.layout.add(s):
                     self.sprites.append(s)
-                    while self.check(s.rect):
-                        self.grow()
                 else:
                     remain.append(s)
             return remain
