@@ -173,8 +173,10 @@ def main():
     parser.add_argument('sprites', nargs='+',
                         help="Sprite images / folders / wildcards")
 
-    parser.add_argument('--debug', action='store_true', default=False,
-                        help="Save textures with debug markup.")
+    parser.add_argument('--debug', type=ImageColor.getrgb, nargs='?',
+                        default=False, const='#00ff00', metavar='COLOR',
+                        help="Save textures with debug markup. "
+                        "If %(metavar)s is omitted, defaults to '%(const)s'.")
 
     ########################################################################
 
@@ -365,7 +367,7 @@ def main():
             if args.debug:
                 draw = ImageDraw.Draw(texture)
                 fill = None
-                line = ImageColor.getrgb('lime')
+                line = args.debug
 
                 for sprite in sheet.sprites:
                     rect = sprite.rect
