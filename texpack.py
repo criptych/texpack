@@ -1,4 +1,5 @@
 #!/bin/env python
+# -*- encoding: utf-8 -*-
 ################################################################################
 ## TexPack - Free and open-source TexturePacker alternative
 ## Copyright (c) 2015 criptych
@@ -143,6 +144,12 @@ def pad_sprites(sprites, size):
             spr.image = image
     return sprites
 
+## Halftone matrix derived, and Bayer matrix copied, from figures in:
+## https://engineering.purdue.edu/~bouman/ece637/notes/pdf/Halftoning.pdf
+
+## Void-and-cluster matrix generated using algorithm described in:
+## http://home.comcast.net/~ulichney/CV/papers/1993-void-cluster.pdf
+
 BAYER = [
     15, 7,13, 5,
      3,11, 1, 9,
@@ -154,6 +161,8 @@ HALFTONE = [
      9, 3, 0, 4,
      8, 2, 1, 5,
     13, 7, 6,12,
+]
+VOID_CLUSTER = [
 ]
 
 def quantize_texture(texture, quantize, palette_type, palette_depth, dither):

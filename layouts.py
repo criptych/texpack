@@ -1,5 +1,12 @@
+# -*- encoding: utf-8 -*-
 ################################################################################
 ## TexPack layout engine
+##
+## Implements selected versions of the Shelf, MaxRects, and Skyline algorithms
+## detailed in the paper "A Thousand Ways to Pack the Bin" by Jukka Jylänki[1],
+## as well as a transpose variant of Shelf here called "Stack".
+##
+## [1] http://clb.demon.fi/files/RectangleBinPack.pdf
 ################################################################################
 
 __all__ = ['get_layout']
