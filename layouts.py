@@ -155,7 +155,7 @@ class Sheet(object):
                 get_next_power_of_2(max_size[1])
                 )
 
-        self.layout = layout(self)
+        self.layout_type = layout
         self.min_size = min_size
         self.max_size = max_size
         self.rotate = rotate
@@ -204,39 +204,41 @@ class Sheet(object):
     def check(self, rect):
         return self.checkw(rect) and self.checkh(rect)
 
-    def do_layout(self):
-        ok = True
-        if self.layout:
-            self.layout.clear()
-            for s in self.sprites:
-                ok &= self.layout.add(s)
-        return ok
-
-    def add(self, sprites):
+    def do_layout(self, sprites=None):
+        placed = []
         remain = []
 
-        if self.layout:
+        if self.layout_type:
+            if sprites is None:
+                sprites = self.sprites
+            layout = self.layout_type(self)
             for spr in sprites:
-                print spr.name
-                while not self.layout.add(spr):
-                    print "\tcouldn't add, try growing"
-                    if self.grow():
-                        print "\tredoing layout @ %dx%d, %d sprites" % (self.size + (len(self.sprites),))
-                        self.do_layout()
-                    else:
-                        print "\tcan't grow any bigger"
-                        break
-                else: ## can't elif on a while
-                    if self.check(spr.rect):
-                        print "\tsprite placed"
-                        self.sprites.append(spr)
-                    else:
-                        print "\tcouldn't place"
-                        print self.size, spr.rect
-                        remain.append(spr)
-            return remain
-        else:
-            return sprites
+                if layout.add(spr):
+                    placed.append(spr)
+                else:
+                    remain.append(spr)
+
+        return placed, remain
+
+    def add(self, sprites):
+        temp = self.sprites + sprites
+
+        remain = self.do_layout(temp)
+
+        while remain:
+            print "\tcouldn't add all sprites, try growing"
+
+            if self.grow():
+                print "\tgrowing to %dx%d" % (self.size)
+            else:
+                print "\tcan't grow any bigger"
+                break
+
+            placed, remain = self.do_layout(temp)
+
+        self.sprites = placed
+
+        return remain
 
 ################################################################################
 
@@ -297,30 +299,29 @@ class ShelfLayout(Layout):
 
         if shelf is None:
             print "\tcreate first shelf"
-            shelf = self.Shelf(0, 0)
+            self._shelf = shelf = self.Shelf(0, 0)
             self.shelves.append(shelf)
 
-        ## Will rotating help?
+        ## Will rotating reduce wasted space?
         if (w > h) and (w <= shelf.max):
-            ## Are we allowed?
+            ## Are we allowed to rotate?
             if self.sheet.rotate:
                 print "\trotating"
                 spr.rotate()
                 w, h = h, w
 
+        if w > maxw:
+            return False
+
         if shelf.size + w > maxw:
             print "\tshelf full, starting new"
-            shelf = self.Shelf(shelf.start + shelf.max, 0)
+            self._shelf = shelf = self.Shelf(shelf.start + shelf.max, 0)
             self.shelves.append(shelf)
 
-        self._shelf = shelf
-
         if shelf.start + rect.height > maxh:
-            print "\trect out of bounds, can't place"
             return False
 
         shelf.place(rect)
-        print rect
         return True
 
 ################################################################################
