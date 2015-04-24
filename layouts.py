@@ -80,6 +80,10 @@ class Rect(object):
         return self.x + self.w > rect.x and self.x < rect.x + rect.w and \
                self.y + self.h > rect.y and self.y < rect.y + rect.h
 
+    def contains(self, rect):
+        return rect.x >= self.x and rect.x + rect.w <= self.x + self.w and \
+               rect.y >= self.y and rect.y + rect.h <= self.y + self.h
+
     def intersect(self, rect):
         r = Rect()
         r.left   = max(self.left,   rect.left  )
@@ -380,6 +384,24 @@ class MaxRectsLayout(Layout):
     regions.  When each rect is placed, its area is removed from the remaining
     free-space rects.
     """
+
+    def clear(self):
+        w, h = self.sheet.size
+        self.free_rects = [Rect(w, h)]
+
+    def split(self, rect):
+        # for free in self.free_rects:
+            # if free.intersects(rect):
+                # self.free_rects.remove( free )
+                # self.free_rects.append( split1 )
+                # self.free_rects.append( split2 )
+
+        # for free1 in self.free_rects:
+            # for free2 in self.free_rects:
+                # if free1 != free2 and free1.contains(free2):
+                    # self.free_rects.remove(free2)
+
+        pass
 
     def add(self, *rects):
         raise NotImplementedError('MaxRectsLayout is not implemented')
