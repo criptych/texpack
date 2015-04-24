@@ -19,6 +19,7 @@ import math
 
 from PIL import Image
 from PIL import ImageChops
+from PIL import ImageColor
 from PIL import ImageOps
 
 import layouts
@@ -29,30 +30,36 @@ def load_sprites(filenames):
     from glob import glob
     return [layouts.Sprite(f) for fn in filenames for f in glob(fn)]
 
-def mask_sprites(sprites):
+def mask_sprites(sprites, color):
     for i, spr in enumerate(sprites):
         w, h = spr.image.size
 
-        A = spr.image.getpixel((0,  0  ))
-        B = spr.image.getpixel((w-1,0  ))
-        C = spr.image.getpixel((0,  h-1))
-        D = spr.image.getpixel((w-1,h-1))
+        try:
+            ## If color is a tuple, use it directly
+            color[0]
+            bg = color
+        except TypeError:
+            ## Determine background color from corners
+            A = spr.image.getpixel((0,  0  ))
+            B = spr.image.getpixel((w-1,0  ))
+            C = spr.image.getpixel((0,  h-1))
+            D = spr.image.getpixel((w-1,h-1))
 
-        ## TODO: there must be a less ugly way to do this
-        AB = A == B
-        AC = A == C
-        AD = A == D
-        BC = B == C
-        BD = B == D
-        CD = C == D
+            ## TODO: there must be a less ugly way to do this
+            AB = A == B
+            AC = A == C
+            AD = A == D
+            BC = B == C
+            BD = B == D
+            CD = C == D
 
-        if AB and (BC or BD):
-            bg = A
-        elif (AC or BC) and CD:
-            bg = D
-        else:
-            ## no matches, skip it
-            continue
+            if AB and (BC or BD):
+                bg = A
+            elif (AC or BC) and CD:
+                bg = D
+            else:
+                ## no matches, skip it
+                continue
 
         ## based on:
         ## <https://mail.python.org/pipermail/image-sig/2002-December/002092.html>
@@ -155,8 +162,10 @@ def main():
                               "If %(metavar)s is omitted, defaults to `%(const)s'.")
     sprite_group.add_argument('--alias', action='store_true', default=False,
                               help="Find and remove duplicate sprites.")
-    sprite_group.add_argument('--mask', action='store_true', default=False,
-                              help="Mask sprites against background color.")
+    sprite_group.add_argument('--mask', type=ImageColor.getrgb, nargs='?',
+                              default=False, const=True, metavar='COLOR',
+                              help="Mask sprites against background color. "
+                              "If %(metavar)s is omitted, detects background color automatically.")
 
     ########################################################################
 
@@ -233,7 +242,7 @@ def main():
 
     if args.mask:
         ## Mask sprites against background color
-        sprites = mask_sprites(sprites)
+        sprites = mask_sprites(sprites, args.mask)
 
     if args.trim:
         ## Trim sprites to visible area
