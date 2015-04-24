@@ -223,7 +223,7 @@ class Sheet(object):
     def add(self, sprites):
         temp = self.sprites + sprites
 
-        remain = self.do_layout(temp)
+        placed, remain = self.do_layout(temp)
 
         while remain:
             print "\tcouldn't add all sprites, try growing"
