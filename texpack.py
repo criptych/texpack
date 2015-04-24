@@ -20,6 +20,7 @@ import math
 from PIL import Image
 from PIL import ImageChops
 from PIL import ImageColor
+from PIL import ImageDraw
 from PIL import ImageOps
 
 import layouts
@@ -148,6 +149,9 @@ def main():
                         help="Prefix for output sheet textures")
     parser.add_argument('sprites', nargs='+',
                         help="Sprite images / folders / wildcards")
+
+    parser.add_argument('--debug', action='store_true', default=False,
+                        help="Save textures with debug markup.")
 
     ########################################################################
 
@@ -326,6 +330,17 @@ def main():
 
         for sprite in sheet.sprites:
             texture.paste(sprite.image, (sprite.rect.x, sprite.rect.y), sprite.image)
+
+        if args.debug:
+            draw = ImageDraw.Draw(texture)
+            fill = None
+            line = ImageColor.getrgb('lime')
+
+            for sprite in sheet.sprites:
+                rect = sprite.rect
+                x0, y0, x1, y1 = rect.x, rect.y, rect.w, rect.h
+                x1, y1 = x1 + x0, y1 + y0
+                draw.rectangle((x0, y0, x1, y1), fill, line)
 
         texture = quantize_texture(texture, args.quantize, args.palette_type, args.palette_depth, args.dither)
 
