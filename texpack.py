@@ -346,7 +346,8 @@ def main():
         print numsheets, 'sheet(s):'
 
         path = os.path.dirname(args.prefix)
-        if path: os.makedirs(path)
+        if path and not os.path.isdir(path):
+            os.makedirs(path)
 
     else:
         digits = 0
