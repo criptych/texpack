@@ -286,12 +286,13 @@ def main():
             layout = layout
         )
 
-        sheets.append(sheet)
-
         sprites = sheet.add(sprites)
 
+        if sheet.sprites:
+            sheets.append(sheet)
+
     if sprites:
-        print "Couldn't pack:"
+        print "Could not place:"
         for spr in sprites:
             print '\t', spr.name
 
@@ -312,10 +313,10 @@ def main():
 
     if numsheets > 0:
         digits = int(math.floor(math.log10(numsheets))+1)
+        print numsheets, 'sheet(s):'
     else:
         digits = 0
 
-    print numsheets, 'sheet(s):'
 
     for i, sheet in enumerate(sheets):
         if not sheet.sprites:
