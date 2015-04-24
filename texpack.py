@@ -381,7 +381,7 @@ def main():
             texname = outname + '.' + args.format
             idxname = outname + '.' + 'idx'
 
-            print '\t', texname
+            print '\t', texname, '(%dx%d)' % sheet.size
 
             texture.save(texname)
 

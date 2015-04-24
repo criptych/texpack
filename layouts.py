@@ -217,15 +217,22 @@ class Sheet(object):
 
         if self.layout:
             for spr in sprites:
+                print spr.name
                 while not self.layout.add(spr):
+                    print "\tcouldn't add, try growing"
                     if self.grow():
+                        print "\tredoing layout @ %dx%d, %d sprites" % (self.size + (len(self.sprites),))
                         self.do_layout()
                     else:
+                        print "\tcan't grow any bigger"
                         break
                 else: ## can't elif on a while
                     if self.check(spr.rect):
+                        print "\tsprite placed"
                         self.sprites.append(spr)
                     else:
+                        print "\tcouldn't place"
+                        print self.size, spr.rect
                         remain.append(spr)
             return remain
         else:
@@ -289,6 +296,7 @@ class ShelfLayout(Layout):
         shelf = vars(self).setdefault('_shelf')
 
         if shelf is None:
+            print "\tcreate first shelf"
             shelf = self.Shelf(0, 0)
             self.shelves.append(shelf)
 
@@ -296,19 +304,23 @@ class ShelfLayout(Layout):
         if (w > h) and (w <= shelf.max):
             ## Are we allowed?
             if self.sheet.rotate:
+                print "\trotating"
                 spr.rotate()
                 w, h = h, w
 
         if shelf.size + w > maxw:
+            print "\tshelf full, starting new"
             shelf = self.Shelf(shelf.start + shelf.max, 0)
             self.shelves.append(shelf)
 
         self._shelf = shelf
 
         if shelf.start + rect.height > maxh:
+            print "\trect out of bounds, can't place"
             return False
 
         shelf.place(rect)
+        print rect
         return True
 
 ################################################################################
