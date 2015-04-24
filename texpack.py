@@ -333,8 +333,6 @@ def main():
         ## Insert transparent padding between sprites
         sprites = pad_sprites(sprites, args.pad)
 
-    sprites.sort(key=lambda s: s.rect.w * s.rect.h, reverse=True)
-
     ########################################################################
     ## Phase 2 - Arrange sprites in sheets
 
