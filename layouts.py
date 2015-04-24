@@ -105,6 +105,7 @@ class Sprite(object):
     def __init__(self, filename, *args, **kwargs):
         self.image = Image.open(filename).convert('RGBA')
         self.pixels = self.image.load()
+        self.filename = filename
         self.name = os.path.basename(filename)
         self.rotated = False
 
@@ -118,9 +119,8 @@ class Sprite(object):
 
     @property
     def rect(self):
-        rect = vars(self).get('_rect')
-        if rect is None:
-            rect = self._rect = Rect(*self.image.size)
+        rect = vars(self).setdefault('_rect', Rect())
+        rect.width, rect.height = self.image.size
         return rect
 
 class Sheet(object):
@@ -171,33 +171,62 @@ class Sheet(object):
     def grow(self):
         maxw, maxh = self.max_size
         oldw, oldh = self.size
-        w = max(1, oldw * 2)
-        h = max(1, oldh * 2)
-        if maxw > 0: w = min(w, maxw)
-        if maxh > 0: h = min(h, maxh)
+
+        w = oldw * 2
+        h = oldh * 2
+
+        if maxw > 0 and w > maxw:
+            w = maxw
+        elif w < 1:
+            w = 1
+        if maxh > 0 and h > maxh:
+            h = maxh
+        elif h < 1:
+            h = 1
+
         if not self.npot:
             w = get_next_power_of_2(w)
             h = get_next_power_of_2(h)
+
         self.size = w, h
         return w > oldw or h > oldh
 
-    def check(self, rect):
+    def checkw(self, rect):
         w, h = self.size
-        rw, rh = rect.x + rect.w, rect.y + rect.h
-        return rw <= w and rh <= h
+        rw = rect.x + rect.w
+        return rw <= w
+
+    def checkh(self, rect):
+        w, h = self.size
+        rh = rect.y + rect.h
+        return rh <= h
+
+    def check(self, rect):
+        return self.checkw(rect) and self.checkh(rect)
+
+    def do_layout(self):
+        ok = True
+        if self.layout:
+            self.layout.clear()
+            for s in self.sprites:
+                ok &= self.layout.add(s)
+        return ok
 
     def add(self, sprites):
         remain = []
 
         if self.layout:
-            for s in sprites:
-                while not self.check(s.rect):
-                    if not self.grow():
+            for spr in sprites:
+                while not self.layout.add(spr):
+                    if self.grow():
+                        self.do_layout()
+                    else:
                         break
-                if self.check(s.rect) and self.layout.add(s):
-                    self.sprites.append(s)
-                else:
-                    remain.append(s)
+                else: ## can't elif on a while
+                    if self.check(spr.rect):
+                        self.sprites.append(spr)
+                    else:
+                        remain.append(spr)
             return remain
         else:
             return sprites
@@ -212,6 +241,9 @@ class Layout(object):
     def __init__(self, sheet):
         self.sheet = sheet
 
+    def clear(self):
+        pass
+
     def add(self, *sprites):
         raise NotImplementedError('use a subclass of Layout')
 
@@ -225,44 +257,55 @@ class ShelfLayout(Layout):
     """
 
     class Shelf(object):
-        def __init__(self, top, height):
-            self.top = top
-            self.height = height
-            self.width = 0
+        def __init__(self, start=0, size=0):
+            self.start = start
+            self.size = size
+            self.max = 0
             self.rects = []
 
         def place(self, rect):
             self.rects.append(rect)
-            rect.left = self.width
-            rect.top = self.top
-            self.width += rect.width
-            if self.height < rect.height:
-                self.height = rect.height
+            rect.left = self.size
+            rect.top = self.start
+            self.size += rect.width
+            if self.max < rect.height:
+                self.max = rect.height
             return rect
 
     def __init__(self, *args, **kwargs):
         Layout.__init__(self, *args, **kwargs)
+        self.clear()
+
+    def clear(self):
+        self._shelf = None
         self.shelves = []
 
     def add(self, spr):
         rect = spr.rect
 
-        shelf = vars(self).setdefault('shelf')
+        w, h = rect.width, rect.height
+        maxw, maxh = self.sheet.size
+
+        shelf = vars(self).setdefault('_shelf')
 
         if shelf is None:
-            shelf = ShelfLayout.Shelf(0, 0)
+            shelf = self.Shelf(0, 0)
             self.shelves.append(shelf)
 
-        if self.sheet.rotate and rect.width > rect.height and rect.width <= shelf.height:
-            spr.rotate()
+        ## Will rotating help?
+        if (w > h) and (w <= shelf.max):
+            ## Are we allowed?
+            if self.sheet.rotate:
+                spr.rotate()
+                w, h = h, w
 
-        if self.sheet.max_size[0] > 0 and shelf.width + rect.width > self.sheet.max_size[0]:
-            shelf = ShelfLayout.Shelf(shelf.top + shelf.height, 0)
+        if shelf.size + w > maxw:
+            shelf = self.Shelf(shelf.start + shelf.max, 0)
             self.shelves.append(shelf)
 
-        self.shelf = shelf
+        self._shelf = shelf
 
-        if self.sheet.max_size[1] > 0 and shelf.top + rect.height > self.sheet.max_size[1]:
+        if shelf.start + rect.height > maxh:
             return False
 
         shelf.place(rect)
@@ -293,12 +336,16 @@ class StackLayout(Layout):
 
     def __init__(self, *args, **kwargs):
         Layout.__init__(self, *args, **kwargs)
+        self.clear()
+
+    def clear(self):
+        self._stack = None
         self.stacks = []
 
     def add(self, spr):
         rect = spr.rect
 
-        stack = vars(self).setdefault('stack')
+        stack = vars(self).setdefault('_stack')
 
         if stack is None:
             stack = StackLayout.Stack(0, 0)
