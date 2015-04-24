@@ -249,6 +249,7 @@ class Layout(object):
 
     def __init__(self, sheet):
         self.sheet = sheet
+        self.clear()
 
     def clear(self):
         pass
@@ -280,10 +281,6 @@ class ShelfLayout(Layout):
             if self.max < rect.height:
                 self.max = rect.height
             return rect
-
-    def __init__(self, *args, **kwargs):
-        Layout.__init__(self, *args, **kwargs)
-        self.clear()
 
     def clear(self):
         self._shelf = None
@@ -346,10 +343,6 @@ class StackLayout(Layout):
             if self.width < rect.width:
                 self.width = rect.width
             return rect
-
-    def __init__(self, *args, **kwargs):
-        Layout.__init__(self, *args, **kwargs)
-        self.clear()
 
     def clear(self):
         self._stack = None
