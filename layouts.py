@@ -147,8 +147,8 @@ class Sheet(object):
 
         if not npot:
             min_size = (
-                get_next_power_of_2(max_size[0]),
-                get_next_power_of_2(max_size[1])
+                get_next_power_of_2(min_size[0]),
+                get_next_power_of_2(min_size[1])
                 )
             max_size = (
                 get_next_power_of_2(max_size[0]),
