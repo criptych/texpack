@@ -143,6 +143,19 @@ def pad_sprites(sprites, size):
             spr.image = image
     return sprites
 
+BAYER = [
+    15, 7,13, 5,
+     3,11, 1, 9,
+    12, 4,14, 6,
+     0, 8, 2,10,
+]
+HALFTONE = [
+    14,10,11,15,
+     9, 3, 0, 4,
+     8, 2, 1, 5,
+    13, 7, 6,12,
+]
+
 def quantize_texture(texture, quantize, palette_type, palette_depth, dither):
     colors = 2**int(palette_depth)
 
@@ -155,11 +168,32 @@ def quantize_texture(texture, quantize, palette_type, palette_depth, dither):
         return texture
 
     if palette_type == 'web-safe':
-        palette = []
-    else:
-        palette = []
+        colors = 216
+        palette = [0,0,0]*216
 
-    return texture.quantize(colors=colors, method=method, palette=palette)
+        i = 0
+        for r in xrange(6):
+            for g in xrange(6):
+                for b in xrange(6):
+                    palette[i], i = 0x33 * r, i + 1
+                    palette[i], i = 0x33 * g, i + 1
+                    palette[i], i = 0x33 * b, i + 1
+
+    else:
+        palette = [0,0,0]*colors
+        ## TODO: generate palette
+
+    palimg = Image.new('P', (1,1))
+    palimg.putpalette(palette, 'RGB')
+
+    bands = texture.split()
+
+    rgb = Image.merge('RGB', bands[:3])
+    alpha = bands[3]
+
+    texture = rgb.quantize(colors, method, 0, palimg)
+    texture.putalpha(alpha)
+    return texture
 
 ################################################################################
 
