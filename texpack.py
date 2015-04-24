@@ -178,15 +178,12 @@ def quantize_texture(texture, quantize, palette_type, palette_depth, dither):
 
     if palette_type == 'web-safe':
         colors = 216
-        palette = [0,0,0]*216
-
-        i = 0
-        for r in xrange(6):
-            for g in xrange(6):
-                for b in xrange(6):
-                    palette[i], i = 0x33 * r, i + 1
-                    palette[i], i = 0x33 * g, i + 1
-                    palette[i], i = 0x33 * b, i + 1
+        palette = ''.join([
+            '%c%c%c' % (0x33*r, 0x33*g, 0x33*b)
+            for r in xrange(6)
+                for g in xrange(6)
+                    for b in xrange(6)
+            ])
 
     else:
         palette = [0,0,0]*colors
