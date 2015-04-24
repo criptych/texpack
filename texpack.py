@@ -16,6 +16,7 @@ import logging
 log = logging.getLogger('TexPack')
 
 import math
+import os
 
 from PIL import Image
 from PIL import ImageChops
@@ -317,7 +318,12 @@ def main():
 
     if numsheets > 0:
         digits = int(math.floor(math.log10(numsheets))+1)
+
         print numsheets, 'sheet(s):'
+
+        path = os.path.dirname(args.prefix)
+        if path: os.makedirs(path)
+
     else:
         digits = 0
 
