@@ -28,6 +28,28 @@ import layouts
 
 ################################################################################
 
+import datetime
+
+class Timer(object):
+    def __init__(self, name='Timer', callback=None):
+        self.name = name
+        if callback is not None:
+            self.callback = callback
+
+    def callback(self, dt):
+        print("%s: %s" % (self.name, dt))
+
+    def __enter__(self):
+        self.start = datetime.datetime.now()
+        return self
+
+    def __exit__(self, *exc_info):
+        self.finish = datetime.datetime.now()
+        if self.callback is not None:
+            self.callback(self.finish - self.start)
+
+################################################################################
+
 def load_sprites(filenames):
     from glob import glob
     return [layouts.Sprite(f) for fn in filenames for f in glob(fn)]
@@ -240,7 +262,8 @@ def main():
     ########################################################################
     ## Phase 1 - Load and process individual sprites
 
-    sprites = load_sprites(args.sprites)
+    with Timer('load sprites'):
+        sprites = load_sprites(args.sprites)
 
     if not sprites:
         parser.error('No sprites found.')
@@ -279,22 +302,23 @@ def main():
 
     oldlen = 0
 
-    while sprites and len(sprites) != oldlen:
-        oldlen = len(sprites)
+    with Timer('generate sheet layouts'):
+        while sprites and len(sprites) != oldlen:
+            oldlen = len(sprites)
 
-        sheet = layouts.Sheet(
-            min_size = args.min_size,
-            max_size = args.max_size,
-            rotate = args.rotate,
-            npot = args.npot,
-            square = args.square,
-            layout = layout
-        )
+            sheet = layouts.Sheet(
+                min_size = args.min_size,
+                max_size = args.max_size,
+                rotate = args.rotate,
+                npot = args.npot,
+                square = args.square,
+                layout = layout
+            )
 
-        sprites = sheet.add(sprites)
+            sprites = sheet.add(sprites)
 
-        if sheet.sprites:
-            sheets.append(sheet)
+            if sheet.sprites:
+                sheets.append(sheet)
 
     if sprites:
         print "Could not place:"
@@ -327,43 +351,43 @@ def main():
     else:
         digits = 0
 
+    with Timer('save sheets'):
+        for i, sheet in enumerate(sheets):
+            if not sheet.sprites:
+                continue
 
-    for i, sheet in enumerate(sheets):
-        if not sheet.sprites:
-            continue
-
-        texture = Image.new('RGBA', sheet.size) # args.color_depth
-
-        for sprite in sheet.sprites:
-            texture.paste(sprite.image, (sprite.rect.x, sprite.rect.y), sprite.image)
-
-        if args.debug:
-            draw = ImageDraw.Draw(texture)
-            fill = None
-            line = ImageColor.getrgb('lime')
+            texture = Image.new('RGBA', sheet.size) # args.color_depth
 
             for sprite in sheet.sprites:
-                rect = sprite.rect
-                x0, y0, x1, y1 = rect.x, rect.y, rect.w, rect.h
-                x1, y1 = x1 + x0, y1 + y0
-                draw.rectangle((x0, y0, x1, y1), fill, line)
+                texture.paste(sprite.image, (sprite.rect.x, sprite.rect.y), sprite.image)
 
-        texture = quantize_texture(texture, args.quantize, args.palette_type, args.palette_depth, args.dither)
+            if args.debug:
+                draw = ImageDraw.Draw(texture)
+                fill = None
+                line = ImageColor.getrgb('lime')
+
+                for sprite in sheet.sprites:
+                    rect = sprite.rect
+                    x0, y0, x1, y1 = rect.x, rect.y, rect.w, rect.h
+                    x1, y1 = x1 + x0, y1 + y0
+                    draw.rectangle((x0, y0, x1, y1), fill, line)
+
+            texture = quantize_texture(texture, args.quantize, args.palette_type, args.palette_depth, args.dither)
 
     ########################################################################
     ## Phase 4 - Output texture data; create index
 
-        outname = '%s%0*d' % (args.prefix, digits, i)
-        texname = outname + '.' + args.format
-        idxname = outname + '.' + 'idx'
+            outname = '%s%0*d' % (args.prefix, digits, i)
+            texname = outname + '.' + args.format
+            idxname = outname + '.' + 'idx'
 
-        print '\t', texname
+            print '\t', texname
 
-        texture.save(texname)
+            texture.save(texname)
 
-        if args.encrypt:
-            encrypt_data(texname, args.encrypt, args.key, args.key_hash, args.key_file)
-            encrypt_data(idxname, args.encrypt, args.key, args.key_hash, args.key_file)
+            if args.encrypt:
+                encrypt_data(texname, args.encrypt, args.key, args.key_hash, args.key_file)
+                encrypt_data(idxname, args.encrypt, args.key, args.key_hash, args.key_file)
 
 ################################################################################
 
