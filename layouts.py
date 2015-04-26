@@ -294,7 +294,7 @@ class ShelfLayout(Layout):
             return rect
 
     def clear(self):
-        self._shelf = None
+        self.size = 0
         self.shelves = []
 
     def add(self, spr):
@@ -303,33 +303,46 @@ class ShelfLayout(Layout):
         w, h = rect.width, rect.height
         maxw, maxh = self.sheet.size
 
-        shelf = vars(self).setdefault('_shelf')
+        if w > maxw or h > maxh:
+            return False
+
+        best = None
+        shelf = None
+        rotated = False
+
+        for sh in self.shelves:
+            tw, th = w, h
+            if self.sheet.rotate and (tw > th) and (tw <= sh.max):
+                tw, th = th, tw
+                rotated = not rotated
+            if sh.size + tw <= maxw and th <= sh.max:
+                score = (maxw - sh.size - tw) * sh.max + tw * (sh.max - th)
+                if best is None or score < best:
+                    best = score
+                    shelf = sh
+
+        if rotated:
+            tw, th = w, h
+        else:
+            tw, th = h, w
 
         if shelf is None:
-            print "\tcreate first shelf"
-            self._shelf = shelf = self.Shelf(0, 0)
+            ## No room on existing shelves
+
+            if self.size + th > maxh:
+                ## No room for new shelf
+                return False
+
+            shelf = self.Shelf(self.size)
             self.shelves.append(shelf)
 
-        ## Will rotating reduce wasted space?
-        if (w > h) and (w <= shelf.max):
-            ## Are we allowed to rotate?
-            if self.sheet.rotate:
-                print "\trotating"
-                spr.rotate()
-                w, h = h, w
+        if rotated:
+            spr.rotate()
 
-        if w > maxw:
-            return False
+        shelf.place(spr.rect)
 
-        if shelf.size + w > maxw:
-            print "\tshelf full, starting new"
-            self._shelf = shelf = self.Shelf(shelf.start + shelf.max, 0)
-            self.shelves.append(shelf)
+        self.size = max(self.size, shelf.start + shelf.max)
 
-        if shelf.start + rect.height > maxh:
-            return False
-
-        shelf.place(rect)
         return True
 
 ################################################################################
