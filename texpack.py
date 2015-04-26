@@ -304,18 +304,18 @@ def main():
     ########################################################################
 
     sprite_group = parser.add_argument_group('sprite options')
+    sprite_group.add_argument('--mask', nargs='?', default=False, const='3of4', metavar='MASK',
+                              help="Mask sprites against background (color or detection method). "
+                              "If %(metavar)s is omitted, defaults to `%(const)s'.")
     sprite_group.add_argument('--trim', action='store_true', default=False,
                               help="Trim sprites to visible area.")
-    sprite_group.add_argument('--pad', type=int, default=0, nargs='?', const=1, metavar='SIZE',
-                              help="Insert %(metavar)s pixels of padding between sprites. "
-                              "If %(metavar)s is omitted, defaults to `%(const)s'.")
+    sprite_group.add_argument('--alias', action='store_true', default=False,
+                              help="Find and remove duplicate sprites.")
     sprite_group.add_argument('--extrude', type=int, default=0, nargs='?', const=1, metavar='SIZE',
                               help="Extrude sprite edges %(metavar)s pixels to avoid color bleed. "
                               "If %(metavar)s is omitted, defaults to `%(const)s'.")
-    sprite_group.add_argument('--alias', action='store_true', default=False,
-                              help="Find and remove duplicate sprites.")
-    sprite_group.add_argument('--mask', nargs='?', default=False, const='3of4', metavar='MASK',
-                              help="Mask sprites against background (color or detection method). "
+    sprite_group.add_argument('--pad', type=int, default=0, nargs='?', const=1, metavar='SIZE',
+                              help="Insert %(metavar)s pixels of padding between sprites. "
                               "If %(metavar)s is omitted, defaults to `%(const)s'.")
     sprite_group.add_argument('--sort', metavar='ATTR',
                               choices=['width','height','area','name',
