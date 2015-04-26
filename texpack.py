@@ -53,7 +53,29 @@ class Timer(object):
 
 def load_sprites(filenames):
     from glob import glob
-    return [layouts.Sprite(f) for fn in filenames for f in glob(fn)]
+
+    r = []
+
+    for fn in filenames:
+        for f in glob(fn):
+            f = os.path.abspath(f)
+            if os.path.isdir(f):
+                for root, dirs, files in os.walk(f):
+                    for ff in files:
+                        try:
+                            r.append(layouts.Sprite(os.path.join(root, ff)))
+                        finally:
+                            ## Not an image file?
+                            pass
+
+            else:
+                try:
+                    r.append(layouts.Sprite(f))
+                finally:
+                    ## Not an image file?
+                    pass
+
+    return r
 
 def mask_sprites(sprites, color):
     for i, spr in enumerate(sprites):
