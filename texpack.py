@@ -77,36 +77,78 @@ def load_sprites(filenames):
 
     return r
 
+def _mask_topleft(A,B,C,D):
+    return A
+
+def _mask_topright(A,B,C,D):
+    return B
+
+def _mask_bottomleft(A,B,C,D):
+    return C
+
+def _mask_bottomright(A,B,C,D):
+    return D
+
+def _mask_2of4(A,B,C,D):
+    if A == B and C != D:
+        return A
+    if A == C and B != D:
+        return A
+    if A == D and B != C:
+        return A
+    if B == C and A != D:
+        return B
+    if B == D and A != C:
+        return B
+    if C == D and A != B:
+        return C
+    return None
+
+def _mask_3of4(A,B,C,D):
+    if A == B and (B == C or B == D):
+        return A
+    if (A == C or B == C) and C == D:
+        return D
+    return None
+
+def _mask_auto(A,B,C,D):
+    r = _mask_3of4(A,B,C,D)
+    s = _mask_2of4(A,B,C,D)
+    return r or s
+
 def mask_sprites(sprites, color):
+    mask_func = {
+        'tl': _mask_topleft,
+        'ul': _mask_topleft,
+        'tr': _mask_topright,
+        'ur': _mask_topright,
+        'bl': _mask_bottomleft,
+        'll': _mask_bottomleft,
+        'br': _mask_bottomright,
+        'lr': _mask_bottomright,
+        '2of4': _mask_2of4,
+        '3of4': _mask_3of4,
+        'auto': _mask_auto,
+    }.get(color.lower())
+
+    if mask_func is None:
+        ## Check color codes
+        color = ImageColor.getrgb(color)
+        mask_func = lambda A,B,C,D: color
+
     for i, spr in enumerate(sprites):
         w, h = spr.image.size
 
-        try:
-            ## If color is a tuple, use it directly
-            color[0]
-            bg = color
-        except TypeError:
-            ## Determine background color from corners
-            A = spr.image.getpixel((0,  0  ))
-            B = spr.image.getpixel((w-1,0  ))
-            C = spr.image.getpixel((0,  h-1))
-            D = spr.image.getpixel((w-1,h-1))
+        ## Get corner colors
+        A = spr.image.getpixel((0,  0  ))
+        B = spr.image.getpixel((w-1,0  ))
+        C = spr.image.getpixel((0,  h-1))
+        D = spr.image.getpixel((w-1,h-1))
 
-            ## TODO: there must be a less ugly way to do this
-            AB = A == B
-            AC = A == C
-            AD = A == D
-            BC = B == C
-            BD = B == D
-            CD = C == D
+        bg = mask_func(A, B, C, D)
 
-            if AB and (BC or BD):
-                bg = A
-            elif (AC or BC) and CD:
-                bg = D
-            else:
-                ## no matches, skip it
-                continue
+        if bg is None:
+            continue
 
         ## based on:
         ## <https://mail.python.org/pipermail/image-sig/2002-December/002092.html>
@@ -253,10 +295,9 @@ def main():
                               "If %(metavar)s is omitted, defaults to `%(const)s'.")
     sprite_group.add_argument('--alias', action='store_true', default=False,
                               help="Find and remove duplicate sprites.")
-    sprite_group.add_argument('--mask', type=ImageColor.getrgb, nargs='?',
-                              default=False, const=True, metavar='COLOR',
-                              help="Mask sprites against background color. "
-                              "If %(metavar)s is omitted, detects background color automatically.")
+    sprite_group.add_argument('--mask', nargs='?', default=False, const='3of4', metavar='MASK',
+                              help="Mask sprites against background (color or detection method). "
+                              "If %(metavar)s is omitted, defaults to `%(const)s'.")
 
     ########################################################################
 
