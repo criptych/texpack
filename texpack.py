@@ -208,6 +208,25 @@ def pad_sprites(sprites, size):
             spr.image = image
     return sprites
 
+def sort_sprites(sprites, attr):
+    if attr == 'width' or attr == 'width-desc':
+        sprites.sort(key=lambda s: s.rect.width, reverse=True)
+    elif attr == 'width-asc':
+        sprites.sort(key=lambda s: s.rect.width, reverse=False)
+    elif attr == 'height' or attr == 'height-desc':
+        sprites.sort(key=lambda s: s.rect.height, reverse=True)
+    elif attr == 'height-asc':
+        sprites.sort(key=lambda s: s.rect.height, reverse=False)
+    elif attr == 'area' or attr == 'area-desc':
+        sprites.sort(key=lambda s: s.rect.width * s.rect.height, reverse=True)
+    elif attr == 'area-asc':
+        sprites.sort(key=lambda s: s.rect.width * s.rect.height, reverse=False)
+    elif attr == 'name' or attr == 'name-asc':
+        sprites.sort(key=lambda s: s.name, reverse=False)
+    elif attr == 'name-desc':
+        sprites.sort(key=lambda s: s.name, reverse=True)
+    return sprites
+
 ## Halftone matrix derived, and Bayer matrix copied, from figures in:
 ## https://engineering.purdue.edu/~bouman/ece637/notes/pdf/Halftoning.pdf
 
@@ -298,6 +317,12 @@ def main():
     sprite_group.add_argument('--mask', nargs='?', default=False, const='3of4', metavar='MASK',
                               help="Mask sprites against background (color or detection method). "
                               "If %(metavar)s is omitted, defaults to `%(const)s'.")
+    sprite_group.add_argument('--sort', metavar='ATTR',
+                              choices=['width','height','area','name',
+                                       'width-asc','height-asc','area-asc','name-asc',
+                                       'width-desc','height-desc','area-desc','name-desc',
+                                       ],
+                              help="Sort sprites by attibute %(metavar)s.")
 
     ########################################################################
 
@@ -395,6 +420,9 @@ def main():
     if args.pad:
         ## Insert transparent padding between sprites
         sprites = pad_sprites(sprites, args.pad)
+
+    if args.sort:
+        sprites = sort_sprites(sprites, args.sort)
 
     ########################################################################
     ## Phase 2 - Arrange sprites in sheets
