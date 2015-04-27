@@ -180,7 +180,20 @@ def hash_sprites(sprites):
 
 ################################################################################
 
-def alias_sprites(sprites):
+def alias_sprites(sprites, tolerance=0):
+    n = 0
+    for i, spr1 in enumerate(sprites):
+        for j, spr2 in enumerate(sprites):
+            if j <= i:
+                continue
+            if spr1.image.size == spr2.image.size:
+                area = spr1.image.size[0] * spr1.image.size[1]
+                diff = ImageChops.difference(spr1.image, spr2.image)
+                hist = diff.histogram()
+                rms = math.sqrt(sum(v*(i%256)**2 for i,v in enumerate(hist))/area)
+                if rms <= tolerance:
+                    sprites.pop(j)
+                    n += 1
     return sprites
 
 ################################################################################
@@ -328,8 +341,9 @@ def main():
                               "If %(metavar)s is omitted, defaults to `%(const)s'.")
     sprite_group.add_argument('--trim', action='store_true', default=False,
                               help="Trim sprites to visible area.")
-    sprite_group.add_argument('--alias', action='store_true', default=False,
-                              help="Find and remove duplicate sprites.")
+    sprite_group.add_argument('--alias', type=float, nargs='?', const=0.0, metavar='TOLERANCE',
+                              help="Find and remove duplicate sprites. "
+                              "If %(metavar)s is omitted, defaults to %(const)s.")
     sprite_group.add_argument('--extrude', type=int, default=0, nargs='?', const=1, metavar='SIZE',
                               help="Extrude sprite edges %(metavar)s pixels to avoid color bleed. "
                               "If %(metavar)s is omitted, defaults to `%(const)s'.")
