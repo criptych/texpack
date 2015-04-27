@@ -341,7 +341,6 @@ class ShelfLayout(Layout):
                     best = score
                     shelf = sh
 
-
         if shelf is None:
             ## No room on existing shelves
 
@@ -399,28 +398,26 @@ class StackLayout(Layout):
 
         best = None
         stack = None
-        rotated = False
 
         for st in self.stacks:
-            tw, th = w, h
-            if self.sheet.rotate and (th > tw) and (th <= st.max):
-                tw, th = th, tw
-                rotated = not rotated
+            if self.sheet.rotate and (h > w) and (h <= sh.max):
+                tw, th = h, w
+                rotated = True
+            else:
+                tw, th = w, h
+                rotated = False
             if st.size + th <= maxh and tw <= st.max:
                 score = (maxh - st.size - th) * st.max + th * (st.max - tw)
                 if best is None or score < best:
                     best = score
                     stack = st
 
-        if rotated:
-            tw, th = w, h
-        else:
-            tw, th = h, w
-
         if stack is None:
             ## No room in existing stacks
 
-            if self.size + tw > maxw:
+            rotated = False
+
+            if self.stacks and self.size + tw > maxw:
                 ## No room for new stack
                 return False
 
