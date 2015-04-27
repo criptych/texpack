@@ -183,11 +183,10 @@ def hash_sprites(sprites):
 def alias_sprites(sprites, tolerance=0):
     n = 0
     aliased = []
-    for i in reversed(range(len(sprites))):
-        spr1 = sprites[i]
+    for i, spr1 in enumerate(sprites):
         for j in reversed(range(len(sprites))):
             if j <= i:
-                continue
+                break
             spr2 = sprites[j]
 
             if spr1.image.size == spr2.image.size:
