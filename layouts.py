@@ -135,8 +135,8 @@ class Sheet(object):
     def __init__(
         self,
         layout=None,
-        min_size=None,
-        max_size=None,
+        min_size=0,
+        max_size=0,
         rotate=False,
         npot=False,
         square=False,
