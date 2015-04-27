@@ -527,11 +527,11 @@ def main():
         ## do main process twice:
         ##   first with filename suffix '@2x',
         ##   then with sheets at half scale
-        pass
+        print "Warning: --scale is not implemented"
 
     if args.compress:
         ## ignore most of the other options and generate compressed textures
-        pass
+        print "Warning: --compress is not implemented"
 
     numsheets = len(sheets)
 
