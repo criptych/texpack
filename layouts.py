@@ -234,10 +234,8 @@ class Sheet(object):
         placed, remain = self.do_layout(temp)
 
         while remain:
-            if self.grow():
-                print "\tgrowing to %dx%d" % (self.size)
-            else:
-                print "\tcan't grow any bigger"
+            if not self.grow():
+                # print "\tcan't grow any bigger"
                 break
 
             placed, remain = self.do_layout(temp)
