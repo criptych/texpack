@@ -238,14 +238,30 @@ def pad_sprites(sprites, size):
 
 ################################################################################
 
-def sort_sprites(sprites, attr):
+def sort_sprites(sprites, attr, rotate=False):
     if attr == 'width' or attr == 'width-desc':
+        if rotate:
+            for spr in sprites:
+                if spr.h > spr.w:
+                    spr.rotate()
         sprites.sort(key=lambda s: s.width, reverse=True)
     elif attr == 'width-asc':
+        if rotate:
+            for spr in sprites:
+                if spr.h > spr.w:
+                    spr.rotate()
         sprites.sort(key=lambda s: s.width, reverse=False)
     elif attr == 'height' or attr == 'height-desc':
+        if rotate:
+            for spr in sprites:
+                if spr.w > spr.h:
+                    spr.rotate()
         sprites.sort(key=lambda s: s.height, reverse=True)
     elif attr == 'height-asc':
+        if rotate:
+            for spr in sprites:
+                if spr.w > spr.h:
+                    spr.rotate()
         sprites.sort(key=lambda s: s.height, reverse=False)
     elif attr == 'area' or attr == 'area-desc':
         sprites.sort(key=lambda s: s.width * s.height, reverse=True)
@@ -455,7 +471,7 @@ def main():
         sprites = pad_sprites(sprites, args.pad)
 
     if args.sort:
-        sprites = sort_sprites(sprites, args.sort)
+        sprites = sort_sprites(sprites, args.sort, args.rotate)
 
     ########################################################################
     ## Phase 2 - Arrange sprites in sheets
