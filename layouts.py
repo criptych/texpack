@@ -254,12 +254,15 @@ class Sheet(object):
 
         if debug:
             draw = ImageDraw.Draw(texture)
-            fill = None
-            line = debug
+            color = debug
 
             for spr in self.sprites:
                 x0, y0, x1, y1 = spr.left, spr.top, spr.right, spr.bottom
-                draw.rectangle((x0, y0, x1, y1), fill, line)
+                draw.rectangle((x0, y0, x1, y1), None, color)
+                draw.text((x0+2, y0+2), spr.name, color)
+                if hasattr(spr, 'alias'):
+                    y0 += draw.textsize(spr.alias.name)[1]
+                    draw.text((x0+2, y0+2), spr.alias.name, color)
 
         return texture
 
