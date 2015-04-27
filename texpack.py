@@ -166,6 +166,7 @@ def trim_sprites(sprites):
     for i, spr in enumerate(sprites):
         box = spr.image.getbbox()
         spr.image = spr.image.crop(box)
+        spr.w, spr.h = spr.image.size
     return sprites
 
 def hash_sprites(sprites):
@@ -197,6 +198,7 @@ def extrude_sprites(sprites, size):
             image.paste(H, (size+w,size+h), H)
             image.paste(spr.image, (size,size), spr.image)
             spr.image = image
+            spr.w, spr.h = spr.image.size
     return sprites
 
 def pad_sprites(sprites, size):
@@ -206,6 +208,7 @@ def pad_sprites(sprites, size):
             image = Image.new(spr.image.mode, (w+size, h+size), (0,0,0,0))
             image.paste(spr.image, (0, 0), spr.image)
             spr.image = image
+            spr.w, spr.h = spr.image.size
     return sprites
 
 def sort_sprites(sprites, attr):
