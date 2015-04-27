@@ -373,47 +373,71 @@ class StackLayout(Layout):
     """
 
     class Stack(object):
-        def __init__(self, left, width):
-            self.left = left
-            self.width = width
-            self.height = 0
+        def __init__(self, start=0, size=0):
+            self.start = start
+            self.size = size
+            self.max = 0
             self.rects = []
 
         def place(self, rect):
             self.rects.append(rect)
-            rect.left = self.left
-            rect.top = self.height
-            self.height += rect.height
-            if self.width < rect.width:
-                self.width = rect.width
+            rect.left = self.start
+            rect.top = self.size
+            self.size += rect.height
+            if self.max < rect.width:
+                self.max = rect.width
             return rect
 
     def clear(self):
-        self._stack = None
+        self.size = 0
         self.stacks = []
 
     def add(self, spr):
         rect = spr.rect
 
-        stack = vars(self).setdefault('_stack')
+        w, h = rect.width, rect.height
+        maxw, maxh = self.sheet.size
 
-        if stack is None:
-            stack = StackLayout.Stack(0, 0)
-            self.stacks.append(stack)
-
-        if self.sheet.rotate and rect.height > rect.width and rect.height <= stack.width:
-            spr.rotate()
-
-        if self.sheet.max_size[1] > 0 and stack.height + rect.height > self.sheet.max_size[1]:
-            stack = StackLayout.Stack(stack.left + stack.width, 0)
-            self.stacks.append(stack)
-
-        self.stack = stack
-
-        if self.sheet.max_size[0] > 0 and stack.left + rect.width > self.sheet.max_size[0]:
+        if w > maxw or h > maxh:
             return False
 
-        stack.place(rect)
+        best = None
+        stack = None
+        rotated = False
+
+        for st in self.stacks:
+            tw, th = w, h
+            if self.sheet.rotate and (th > tw) and (th <= st.max):
+                tw, th = th, tw
+                rotated = not rotated
+            if st.size + th <= maxh and tw <= st.max:
+                score = (maxh - st.size - th) * st.max + th * (st.max - tw)
+                if best is None or score < best:
+                    best = score
+                    stack = st
+
+        if rotated:
+            tw, th = w, h
+        else:
+            tw, th = h, w
+
+        if stack is None:
+            ## No room in existing stacks
+
+            if self.size + tw > maxw:
+                ## No room for new stack
+                return False
+
+            stack = self.Stack(self.size)
+            self.stacks.append(stack)
+
+        if rotated:
+            spr.rotate()
+
+        stack.place(spr.rect)
+
+        self.size = max(self.size, stack.start + stack.max)
+
         return True
 
 ################################################################################
