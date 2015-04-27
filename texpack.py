@@ -341,7 +341,7 @@ def quantize_texture(texture, quantize, palette_type, palette_depth, dither):
 
 ################################################################################
 
-def main():
+def main(*argv):
     import argparse
 
     parser = argparse.ArgumentParser(usage='%(prog)s prefix sprites... [options]')
@@ -443,7 +443,7 @@ def main():
 
     ########################################################################
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     ########################################################################
     ## Phase 1 - Load and process individual sprites
@@ -575,7 +575,8 @@ def main():
 ################################################################################
 
 if __name__ == '__main__':
-    main()
+    import sys
+    main(*sys.argv[1:])
 
 ################################################################################
 ## EOF
