@@ -488,21 +488,7 @@ def main():
             if not sheet.sprites:
                 continue
 
-            texture = Image.new('RGBA', sheet.size) # args.color_depth
-
-            for sprite in sheet.sprites:
-                texture.paste(sprite.image, (sprite.rect.x, sprite.rect.y), sprite.image)
-
-            if args.debug:
-                draw = ImageDraw.Draw(texture)
-                fill = None
-                line = args.debug
-
-                for sprite in sheet.sprites:
-                    rect = sprite.rect
-                    x0, y0, x1, y1 = rect.x, rect.y, rect.w, rect.h
-                    x1, y1 = x1 + x0, y1 + y0
-                    draw.rectangle((x0, y0, x1, y1), fill, line)
+            texture = sheet.prepare(args.debug)
 
             texture = quantize_texture(texture, args.quantize, args.palette_type, args.palette_depth, args.dither)
 

@@ -110,6 +110,7 @@ class Rect(object):
 ################################################################################
 
 from PIL import Image
+from PIL import ImageDraw
 import os
 
 class Sprite(object):
@@ -250,6 +251,25 @@ class Sheet(object):
         self.sprites = placed
 
         return remain
+
+    def prepare(self, debug=None):
+        texture = Image.new('RGBA', self.size) # args.color_depth
+
+        for sprite in self.sprites:
+            texture.paste(sprite.image, (sprite.rect.x, sprite.rect.y), sprite.image)
+
+        if debug:
+            draw = ImageDraw.Draw(texture)
+            fill = None
+            line = debug
+
+            for sprite in self.sprites:
+                rect = sprite.rect
+                x0, y0, x1, y1 = rect.x, rect.y, rect.w, rect.h
+                x1, y1 = x1 + x0, y1 + y0
+                draw.rectangle((x0, y0, x1, y1), fill, line)
+
+        return texture
 
 ################################################################################
 
