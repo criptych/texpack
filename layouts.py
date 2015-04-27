@@ -113,27 +113,23 @@ from PIL import Image
 from PIL import ImageDraw
 import os
 
-class Sprite(object):
+class Sprite(Rect):
     def __init__(self, filename, *args, **kwargs):
         self.image = Image.open(filename).convert('RGBA')
         self.pixels = self.image.load()
         self.filename = filename
         self.name = os.path.basename(filename)
         self.rotated = False
+        self.x, self.y, (self.w, self.h) = 0, 0, self.image.size
 
     def rotate(self):
         if self.rotated:
             self.image = self.image.transpose(Image.ROTATE_270)
         else:
             self.image = self.image.transpose(Image.ROTATE_90)
-        self.rect.width, self.rect.height = self.rect.height, self.rect.width
-        self.rotated = not self.rotated
 
-    @property
-    def rect(self):
-        rect = vars(self).setdefault('_rect', Rect())
-        rect.width, rect.height = self.image.size
-        return rect
+        self.w, self.h = self.image.size
+        self.rotated = not self.rotated
 
 class Sheet(object):
     def __init__(
@@ -238,8 +234,6 @@ class Sheet(object):
         placed, remain = self.do_layout(temp)
 
         while remain:
-            print "\tcouldn't add all sprites, try growing"
-
             if self.grow():
                 print "\tgrowing to %dx%d" % (self.size)
             else:
@@ -255,18 +249,16 @@ class Sheet(object):
     def prepare(self, debug=None):
         texture = Image.new('RGBA', self.size) # args.color_depth
 
-        for sprite in self.sprites:
-            texture.paste(sprite.image, (sprite.rect.x, sprite.rect.y), sprite.image)
+        for spr in self.sprites:
+            texture.paste(spr.image, (spr.x, spr.y), spr.image)
 
         if debug:
             draw = ImageDraw.Draw(texture)
             fill = None
             line = debug
 
-            for sprite in self.sprites:
-                rect = sprite.rect
-                x0, y0, x1, y1 = rect.x, rect.y, rect.w, rect.h
-                x1, y1 = x1 + x0, y1 + y0
+            for spr in self.sprites:
+                x0, y0, x1, y1 = spr.left, spr.top, spr.right, spr.bottom
                 draw.rectangle((x0, y0, x1, y1), fill, line)
 
         return texture
@@ -318,9 +310,7 @@ class ShelfLayout(Layout):
         self.shelves = []
 
     def add(self, spr):
-        rect = spr.rect
-
-        w, h = rect.width, rect.height
+        w, h = spr.width, spr.height
         maxw, maxh = self.sheet.size
 
         if w > maxw or h > maxh:
@@ -359,7 +349,7 @@ class ShelfLayout(Layout):
         if rotated:
             spr.rotate()
 
-        shelf.place(spr.rect)
+        shelf.place(spr)
 
         self.size = max(self.size, shelf.start + shelf.max)
 
@@ -393,9 +383,7 @@ class StackLayout(Layout):
         self.stacks = []
 
     def add(self, spr):
-        rect = spr.rect
-
-        w, h = rect.width, rect.height
+        w, h = spr.width, spr.height
         maxw, maxh = self.sheet.size
 
         if w > maxw or h > maxh:
@@ -434,7 +422,7 @@ class StackLayout(Layout):
         if rotated:
             spr.rotate()
 
-        stack.place(spr.rect)
+        stack.place(spr)
 
         self.size = max(self.size, stack.start + stack.max)
 

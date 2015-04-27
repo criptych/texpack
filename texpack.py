@@ -210,17 +210,17 @@ def pad_sprites(sprites, size):
 
 def sort_sprites(sprites, attr):
     if attr == 'width' or attr == 'width-desc':
-        sprites.sort(key=lambda s: s.rect.width, reverse=True)
+        sprites.sort(key=lambda s: s.width, reverse=True)
     elif attr == 'width-asc':
-        sprites.sort(key=lambda s: s.rect.width, reverse=False)
+        sprites.sort(key=lambda s: s.width, reverse=False)
     elif attr == 'height' or attr == 'height-desc':
-        sprites.sort(key=lambda s: s.rect.height, reverse=True)
+        sprites.sort(key=lambda s: s.height, reverse=True)
     elif attr == 'height-asc':
-        sprites.sort(key=lambda s: s.rect.height, reverse=False)
+        sprites.sort(key=lambda s: s.height, reverse=False)
     elif attr == 'area' or attr == 'area-desc':
-        sprites.sort(key=lambda s: s.rect.width * s.rect.height, reverse=True)
+        sprites.sort(key=lambda s: s.width * s.height, reverse=True)
     elif attr == 'area-asc':
-        sprites.sort(key=lambda s: s.rect.width * s.rect.height, reverse=False)
+        sprites.sort(key=lambda s: s.width * s.height, reverse=False)
     elif attr == 'name' or attr == 'name-asc':
         sprites.sort(key=lambda s: s.name, reverse=False)
     elif attr == 'name-desc':
