@@ -77,6 +77,8 @@ def load_sprites(filenames):
 
     return r
 
+################################################################################
+
 def _mask_topleft(A,B,C,D):
     return A
 
@@ -162,6 +164,8 @@ def mask_sprites(sprites, color):
 
     return sprites
 
+################################################################################
+
 def trim_sprites(sprites):
     for i, spr in enumerate(sprites):
         box = spr.image.getbbox()
@@ -169,11 +173,17 @@ def trim_sprites(sprites):
         spr.w, spr.h = spr.image.size
     return sprites
 
+################################################################################
+
 def hash_sprites(sprites):
     return sprites
 
+################################################################################
+
 def alias_sprites(sprites):
     return sprites
+
+################################################################################
 
 def extrude_sprites(sprites, size):
     if size:
@@ -201,6 +211,8 @@ def extrude_sprites(sprites, size):
             spr.w, spr.h = spr.image.size
     return sprites
 
+################################################################################
+
 def pad_sprites(sprites, size):
     if size:
         for i, spr in enumerate(sprites):
@@ -210,6 +222,8 @@ def pad_sprites(sprites, size):
             spr.image = image
             spr.w, spr.h = spr.image.size
     return sprites
+
+################################################################################
 
 def sort_sprites(sprites, attr):
     if attr == 'width' or attr == 'width-desc':
@@ -229,6 +243,8 @@ def sort_sprites(sprites, attr):
     elif attr == 'name-desc':
         sprites.sort(key=lambda s: s.name, reverse=True)
     return sprites
+
+################################################################################
 
 ## Halftone matrix derived, and Bayer matrix copied, from figures in:
 ## https://engineering.purdue.edu/~bouman/ece637/notes/pdf/Halftoning.pdf
