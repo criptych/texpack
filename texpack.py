@@ -502,14 +502,14 @@ def main():
             texname = outname + '.' + args.format
             idxname = outname + '.' + 'idx'
 
-            print '\t', texname, '(%dx%d, %d sprites)' % (
-                sheet.size[0], sheet.size[1], len(sheet.sprites))
-
             texture.save(texname)
 
             if args.encrypt:
                 encrypt_data(texname, args.encrypt, args.key, args.key_hash, args.key_file)
                 encrypt_data(idxname, args.encrypt, args.key, args.key_hash, args.key_file)
+
+            print '\t', texname, '(%dx%d, %d sprites, %.1f%% coverage)' % (
+                sheet.size[0], sheet.size[1], len(sheet.sprites), 100*sheet.coverage)
 
 ################################################################################
 

@@ -263,6 +263,14 @@ class Sheet(object):
 
         return texture
 
+    @property
+    def coverage(self):
+        area = self.size[0] * self.size[1]
+        used = 0
+        for spr in self.sprites:
+            used += spr.w * spr.h
+        return float(used) / float(area)
+
 ################################################################################
 
 class Layout(object):
