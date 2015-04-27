@@ -182,19 +182,26 @@ def hash_sprites(sprites):
 
 def alias_sprites(sprites, tolerance=0):
     n = 0
-    for i, spr1 in enumerate(sprites):
-        for j, spr2 in enumerate(sprites):
+    aliased = []
+    for i in reversed(range(len(sprites))):
+        spr1 = sprites[i]
+        for j in reversed(range(len(sprites))):
             if j <= i:
                 continue
+            spr2 = sprites[j]
+
             if spr1.image.size == spr2.image.size:
                 area = spr1.image.size[0] * spr1.image.size[1]
                 diff = ImageChops.difference(spr1.image, spr2.image)
                 hist = diff.histogram()
-                rms = math.sqrt(sum(v*(i%256)**2 for i,v in enumerate(hist))/area)
+                total = sum(v*(i%256)**2 for i,v in enumerate(hist))
+                rms = math.sqrt(total/area/65536.0)
                 if rms <= tolerance:
                     sprites.pop(j)
+                    spr2.alias = spr1
+                    aliased.append(spr2)
                     n += 1
-    return sprites
+    return sprites, aliased
 
 ################################################################################
 
@@ -443,6 +450,7 @@ def main():
 
     with Timer('load sprites'):
         sprites = load_sprites(args.sprites)
+        aliased = []
 
     if not sprites:
         parser.error('No sprites found.')
@@ -458,9 +466,16 @@ def main():
         ## Generate hashes of trimmed sprites
         sprites = hash_sprites(sprites)
 
-    if args.alias:
+    if args.alias is not None:
         ## Find and remove duplicate sprites
-        sprites = alias_sprites(sprites)
+        sprites, aliased = alias_sprites(sprites, args.alias)
+
+        if aliased:
+            sheet = layouts.Sheet(npot=True, layout=layouts.get_layout('stack'))
+            sheet.add(aliased)
+            texture = sheet.prepare(args.debug)
+            texname = '%salias.png' % args.prefix
+            texture.save(texname)
 
     if args.extrude:
         ## Extrude sprite edges to avoid color bleed
