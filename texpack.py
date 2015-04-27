@@ -64,14 +64,14 @@ def load_sprites(filenames):
                     for ff in files:
                         try:
                             r.append(layouts.Sprite(os.path.join(root, ff)))
-                        finally:
+                        except IOError:
                             ## Not an image file?
                             pass
 
             else:
                 try:
                     r.append(layouts.Sprite(f))
-                finally:
+                except IOError:
                     ## Not an image file?
                     pass
 
