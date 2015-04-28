@@ -215,23 +215,41 @@ def hash_sprites(sprites):
 def alias_sprites(sprites, tolerance=0):
     n = 0
     aliased = []
+
+    if tolerance > 0:
+        def is_alias(spr1, spr2):
+            if spr1.image.size != spr2.image.size:
+                return False
+            area = spr1.image.size[0] * spr1.image.size[1]
+            diff = ImageChops.difference(spr1.image, spr2.image)
+            hist = diff.histogram()
+            total = sum(v*(i%256)**2 for i,v in enumerate(hist))
+            rms = math.sqrt(total/area/65536.0)
+            return rms <= tolerance
+
+    else:
+        def is_alias(spr1, spr2):
+            if spr1.image.size != spr2.image.size:
+                return False
+            diff = ImageChops.difference(spr1.image, spr2.image)
+            for min, max in diff.getextrema():
+                if (min > 0) or (max > 0):
+                    return False
+            return True
+
+    # with Timer('alias sprites'):
     for i, spr1 in enumerate(sprites):
         for j in reversed(range(len(sprites))):
             if j <= i:
                 break
             spr2 = sprites[j]
 
-            if spr1.image.size == spr2.image.size:
-                area = spr1.image.size[0] * spr1.image.size[1]
-                diff = ImageChops.difference(spr1.image, spr2.image)
-                hist = diff.histogram()
-                total = sum(v*(i%256)**2 for i,v in enumerate(hist))
-                rms = math.sqrt(total/area/65536.0)
-                if rms <= tolerance:
-                    sprites.pop(j)
-                    spr2.alias = spr1
-                    aliased.append(spr2)
-                    n += 1
+            if is_alias(spr1, spr2):
+                sprites.pop(j)
+                spr2.alias = spr1
+                aliased.append(spr2)
+                n += 1
+
     return sprites, aliased
 
 ################################################################################
