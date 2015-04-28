@@ -27,7 +27,7 @@ class Layout(object):
     def clear(self):
         pass
 
-    def add(self, *sprites):
+    def add(self, spr):
         raise NotImplementedError('use a subclass of Layout')
 
 ################################################################################
@@ -201,7 +201,7 @@ class MaxRectsLayout(Layout):
 
         pass
 
-    def add(self, *rects):
+    def add(self, spr):
         raise NotImplementedError('MaxRectsLayout is not implemented')
 
 ################################################################################
@@ -210,7 +210,7 @@ class SkylineLayout(Layout):
     """
     """
 
-    def add(self, *rects):
+    def add(self, spr):
         raise NotImplementedError('SkylineLayout is not implemented')
 
 ################################################################################
