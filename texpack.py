@@ -457,7 +457,7 @@ def main(*argv):
     texture_group.add_argument('--color-depth', type=str.lower, default='RGBA8', metavar='DEPTH',
                                choices=['RGB4','RGBA4','RGB5','RGB565','RGBA5551','RGB8','RGBA8'],
                                help="Select color bit-depth. (default: %(default)s)")
-    texture_group.add_argument('--compress', type=str.lower, nargs='?', const='S3TC', metavar='TYPE',
+    texture_group.add_argument('--compress', type=str.upper, nargs='?', const='S3TC', metavar='TYPE',
                                choices=['S3TC','ETC','PVRTC','ATITC'], help=
                                "Set texture compression. If %(metavar)s is omitted, defaults to `%(const)s'. "
                                "Overrides --depth, --format, and quantization options.")
