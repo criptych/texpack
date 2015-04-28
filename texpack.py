@@ -25,7 +25,8 @@ from PIL import ImageColor
 from PIL import ImageDraw
 from PIL import ImageOps
 
-import layouts
+from layouts import get_layout
+from spritesheet import Sprite, Sheet
 
 ################################################################################
 
@@ -63,14 +64,14 @@ def load_sprites(filenames):
                 for root, dirs, files in os.walk(f):
                     for ff in files:
                         try:
-                            r.append(layouts.Sprite(os.path.join(root, ff)))
+                            r.append(Sprite(os.path.join(root, ff)))
                         except IOError:
                             ## Not an image file?
                             pass
 
             else:
                 try:
-                    r.append(layouts.Sprite(f))
+                    r.append(Sprite(f))
                 except IOError:
                     ## Not an image file?
                     pass
@@ -470,7 +471,7 @@ def main(*argv):
         sprites, aliased = alias_sprites(sprites, args.alias)
 
         if aliased:
-            sheet = layouts.Sheet(npot=True, layout=layouts.get_layout('stack'))
+            sheet = Sheet(npot=True, layout=get_layout('stack'))
             sheet.add(aliased)
             texture = sheet.prepare(args.debug)
             texname = '%salias.png' % args.prefix
@@ -492,7 +493,7 @@ def main(*argv):
 
     sheets = []
 
-    layout = layouts.get_layout(args.layout)
+    layout = get_layout(args.layout)
 
     oldlen = 0
 
@@ -500,7 +501,7 @@ def main(*argv):
         while sprites and len(sprites) != oldlen:
             oldlen = len(sprites)
 
-            sheet = layouts.Sheet(
+            sheet = Sheet(
                 min_size = args.min_size,
                 max_size = args.max_size,
                 rotate = args.rotate,
