@@ -405,6 +405,9 @@ def main(*argv):
                         help="Save textures with debug markup. "
                         "If %(metavar)s is omitted, defaults to '%(const)s'.")
 
+    parser.add_argument('--verbose', '-v', action='count', default=0,
+                        help="Print more detailed messages.")
+
     ########################################################################
 
     sprite_group = parser.add_argument_group('sprite options')
@@ -493,6 +496,9 @@ def main(*argv):
     ########################################################################
 
     args = parser.parse_args(argv)
+
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
 
     ########################################################################
     ## Phase 1 - Load and process individual sprites
