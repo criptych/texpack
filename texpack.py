@@ -14,7 +14,8 @@
 ################################################################################
 
 import logging
-log = logging.getLogger('TexPack')
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('texpack')
 
 import math
 import os
@@ -32,23 +33,53 @@ from spritesheet import Sprite, Sheet
 
 import datetime
 
+def strfdelta(dt, fmt=None):
+    dy = dt.days
+    ts = dt.seconds
+
+    hr = (ts // 3600)
+    mn = (ts //   60) % 60
+    sc = (ts        ) % 60
+
+    us = dt.microseconds
+    ms = us // 1000
+
+    if fmt is None:
+        if dy:
+            return '%dd%02d:%02d:%02d.%06d' % (dy, hr, mn, sc, us)
+        elif hr:
+            return '%d:%02d:%02d.%06d' % (hr, mn, sc, us)
+        elif mn:
+            return '%d:%02d.%06d' % (mn, sc, us)
+        else:
+            return '%d.%06ds' % (sc, us)
+
+    return (fmt
+        .replace('%d', '%d' % dy)
+        .replace('%S', '%d' % ts)
+        .replace('%h', '%02d' % hr)
+        .replace('%m', '%02d' % mn)
+        .replace('%s', '%02d' % sc)
+        .replace('%f', '%06d' % us)
+    )
+
 class Timer(object):
     def __init__(self, name='Timer', callback=None):
         self.name = name
-        if callback is not None:
-            self.callback = callback
-
-    def callback(self, dt):
-        print("%s: %s" % (self.name, dt))
+        self.callback = callback
 
     def __enter__(self):
         self.start = datetime.datetime.now()
+        log.debug("%s: start: %s", self.name, self.start.strftime('%H:%M:%S'))
         return self
 
     def __exit__(self, *exc_info):
         self.finish = datetime.datetime.now()
+        dt = self.finish - self.start
+        log.debug("%s: end: %s (%s)", self.name, self.finish.strftime('%H:%M:%S'),
+            strfdelta(dt))
         if self.callback is not None:
-            self.callback(self.finish - self.start)
+            self.callback(dt)
 
 ################################################################################
 
