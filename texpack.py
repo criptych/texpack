@@ -205,7 +205,6 @@ def trim_sprites(sprites):
         for i, spr in enumerate(sprites):
             box = spr.image.getbbox()
             spr.image = spr.image.crop(box)
-            spr.w, spr.h = spr.image.size
 
     return sprites
 
@@ -225,6 +224,7 @@ def alias_sprites(sprites, tolerance=0):
             def is_alias(spr1, spr2):
                 if spr1.image.size != spr2.image.size:
                     return False
+
                 area = spr1.image.size[0] * spr1.image.size[1]
                 diff = ImageChops.difference(spr1.image, spr2.image)
                 hist = diff.histogram()
@@ -264,6 +264,7 @@ def extrude_sprites(sprites, size):
             for i, spr in enumerate(sprites):
                 w, h = spr.image.size
                 image = Image.new(spr.image.mode, (w+size*2, h+size*2), (0,0,0,0))
+
                 A = spr.image.crop((0,  0,  1,1)).resize((size,size))
                 B = spr.image.crop((0,  0,  w,1)).resize((w,   size))
                 C = spr.image.crop((w-1,0,  w,1)).resize((size,size))
@@ -272,6 +273,7 @@ def extrude_sprites(sprites, size):
                 F = spr.image.crop((0,  h-1,1,h)).resize((size,size))
                 G = spr.image.crop((0,  h-1,w,h)).resize((w,   size))
                 H = spr.image.crop((w-1,h-1,w,h)).resize((size,size))
+
                 image.paste(A, (0,     0     ), A)
                 image.paste(B, (size,  0     ), B)
                 image.paste(C, (size+w,0     ), C)
@@ -281,8 +283,8 @@ def extrude_sprites(sprites, size):
                 image.paste(G, (size,  size+h), G)
                 image.paste(H, (size+w,size+h), H)
                 image.paste(spr.image, (size,size), spr.image)
+
                 spr.image = image
-                spr.w, spr.h = spr.image.size
 
     return sprites
 
@@ -296,7 +298,6 @@ def pad_sprites(sprites, size):
                 image = Image.new(spr.image.mode, (w+size, h+size), (0,0,0,0))
                 image.paste(spr.image, (0, 0), spr.image)
                 spr.image = image
-                spr.w, spr.h = spr.image.size
 
     return sprites
 

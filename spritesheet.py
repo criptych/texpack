@@ -114,16 +114,29 @@ class Sprite(Rect):
         self.filename = filename
         self.name = os.path.basename(filename)
         self.rotated = False
-        self.x, self.y, (self.w, self.h) = 0, 0, self.image.size
+        self.x, self.y = 0, 0
+
+    @property
+    def image(self):
+        if self.rotated:
+            try:
+                return self._rimage
+            except AttributeError:
+                self._rimage = self._image.transpose(Image.ROTATE_90)
+                return self._rimage
+        else:
+            return self._image
+
+    @image.setter
+    def image(self, value):
+        self._image = value
+        self._rimage = None
+        self.w, self.h = value.size
+        self.rotated = False
 
     def rotate(self):
-        if self.rotated:
-            self.image = self.image.transpose(Image.ROTATE_270)
-        else:
-            self.image = self.image.transpose(Image.ROTATE_90)
-
-        self.w, self.h = self.image.size
         self.rotated = not self.rotated
+        self.w, self.h = self.h, self.w
 
 class Sheet(object):
     def __init__(

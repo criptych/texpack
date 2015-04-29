@@ -60,21 +60,20 @@ class ShelfLayout(Layout):
         self.shelves = []
 
     def add(self, spr):
-        w, h = spr.width, spr.height
         maxw, maxh = self.sheet.size
 
-        if w > maxw or h > maxh:
+        if spr.w > maxw or spr.h > maxh:
             return False
 
         best = None
         shelf = None
 
         for sh in self.shelves:
-            if self.sheet.rotate and (w > h) and (w <= sh.max):
-                tw, th = h, w
+            if self.sheet.rotate and (spr.w > spr.h) and (spr.w <= sh.max):
+                tw, th = spr.h, spr.w
                 rotated = True
             else:
-                tw, th = w, h
+                tw, th = spr.w, spr.h
                 rotated = False
             if sh.size + tw <= maxw and th <= sh.max:
                 score = (maxw - sh.size - tw) * sh.max + tw * (sh.max - th)
@@ -87,7 +86,7 @@ class ShelfLayout(Layout):
 
             rotated = False
 
-            if self.shelves and self.size + h > maxh:
+            if self.shelves and self.size + spr.h > maxh:
                 ## No room for new shelf
                 return False
 
