@@ -88,24 +88,25 @@ def load_sprites(filenames):
 
     r = []
 
-    for fn in filenames:
-        for f in glob(fn):
-            f = os.path.abspath(f)
-            if os.path.isdir(f):
-                for root, dirs, files in os.walk(f):
-                    for ff in files:
-                        try:
-                            r.append(Sprite(os.path.join(root, ff)))
-                        except IOError:
-                            ## Not an image file?
-                            pass
+    with Timer('load sprites'):
+        for fn in filenames:
+            for f in glob(fn):
+                f = os.path.abspath(f)
+                if os.path.isdir(f):
+                    for root, dirs, files in os.walk(f):
+                        for ff in files:
+                            try:
+                                r.append(Sprite(os.path.join(root, ff)))
+                            except IOError:
+                                ## Not an image file?
+                                pass
 
-            else:
-                try:
-                    r.append(Sprite(f))
-                except IOError:
-                    ## Not an image file?
-                    pass
+                else:
+                    try:
+                        r.append(Sprite(f))
+                    except IOError:
+                        ## Not an image file?
+                        pass
 
     return r
 
@@ -170,39 +171,42 @@ def mask_sprites(sprites, color):
         color = ImageColor.getrgb(color)
         mask_func = lambda A,B,C,D: color
 
-    for i, spr in enumerate(sprites):
-        w, h = spr.image.size
+    with Timer('mask sprites'):
+        for i, spr in enumerate(sprites):
+            w, h = spr.image.size
 
-        ## Get corner colors
-        A = spr.image.getpixel((0,  0  ))
-        B = spr.image.getpixel((w-1,0  ))
-        C = spr.image.getpixel((0,  h-1))
-        D = spr.image.getpixel((w-1,h-1))
+            ## Get corner colors
+            A = spr.image.getpixel((0,  0  ))
+            B = spr.image.getpixel((w-1,0  ))
+            C = spr.image.getpixel((0,  h-1))
+            D = spr.image.getpixel((w-1,h-1))
 
-        bg = mask_func(A, B, C, D)
+            bg = mask_func(A, B, C, D)
 
-        if bg is None:
-            continue
+            if bg is None:
+                continue
 
-        ## based on:
-        ## <https://mail.python.org/pipermail/image-sig/2002-December/002092.html>
+            ## based on:
+            ## <https://mail.python.org/pipermail/image-sig/2002-December/002092.html>
 
-        outbands = [srcband.point(lambda p: (p != level) and 255)
-                    for srcband, level in zip(spr.image.split(), bg)]
-        tband = ImageChops.lighter(
-            ImageChops.lighter(outbands[0], outbands[1]),
-            outbands[2]).convert('1')
-        spr.image.putalpha(tband)
+            outbands = [srcband.point(lambda p: (p != level) and 255)
+                        for srcband, level in zip(spr.image.split(), bg)]
+            tband = ImageChops.lighter(
+                ImageChops.lighter(outbands[0], outbands[1]),
+                outbands[2]).convert('1')
+            spr.image.putalpha(tband)
 
     return sprites
 
 ################################################################################
 
 def trim_sprites(sprites):
-    for i, spr in enumerate(sprites):
-        box = spr.image.getbbox()
-        spr.image = spr.image.crop(box)
-        spr.w, spr.h = spr.image.size
+    with Timer('trim sprites'):
+        for i, spr in enumerate(sprites):
+            box = spr.image.getbbox()
+            spr.image = spr.image.crop(box)
+            spr.w, spr.h = spr.image.size
+
     return sprites
 
 ################################################################################
@@ -216,39 +220,39 @@ def alias_sprites(sprites, tolerance=0):
     n = 0
     aliased = []
 
-    if tolerance > 0:
-        def is_alias(spr1, spr2):
-            if spr1.image.size != spr2.image.size:
-                return False
-            area = spr1.image.size[0] * spr1.image.size[1]
-            diff = ImageChops.difference(spr1.image, spr2.image)
-            hist = diff.histogram()
-            total = sum(v*(i%256)**2 for i,v in enumerate(hist))
-            rms = math.sqrt(total/area/65536.0)
-            return rms <= tolerance
-
-    else:
-        def is_alias(spr1, spr2):
-            if spr1.image.size != spr2.image.size:
-                return False
-            diff = ImageChops.difference(spr1.image, spr2.image)
-            for min, max in diff.getextrema():
-                if (min > 0) or (max > 0):
+    with Timer('alias sprites'):
+        if tolerance > 0:
+            def is_alias(spr1, spr2):
+                if spr1.image.size != spr2.image.size:
                     return False
-            return True
+                area = spr1.image.size[0] * spr1.image.size[1]
+                diff = ImageChops.difference(spr1.image, spr2.image)
+                hist = diff.histogram()
+                total = sum(v*(i%256)**2 for i,v in enumerate(hist))
+                rms = math.sqrt(total/area/65536.0)
+                return rms <= tolerance
 
-    # with Timer('alias sprites'):
-    for i, spr1 in enumerate(sprites):
-        for j in reversed(range(len(sprites))):
-            if j <= i:
-                break
-            spr2 = sprites[j]
+        else:
+            def is_alias(spr1, spr2):
+                if spr1.image.size != spr2.image.size:
+                    return False
+                diff = ImageChops.difference(spr1.image, spr2.image)
+                for min, max in diff.getextrema():
+                    if (min > 0) or (max > 0):
+                        return False
+                return True
 
-            if is_alias(spr1, spr2):
-                sprites.pop(j)
-                spr2.alias = spr1
-                aliased.append(spr2)
-                n += 1
+        for i, spr1 in enumerate(sprites):
+            for j in reversed(range(len(sprites))):
+                if j <= i:
+                    break
+                spr2 = sprites[j]
+
+                if is_alias(spr1, spr2):
+                    sprites.pop(j)
+                    spr2.alias = spr1
+                    aliased.append(spr2)
+                    n += 1
 
     return sprites, aliased
 
@@ -256,77 +260,94 @@ def alias_sprites(sprites, tolerance=0):
 
 def extrude_sprites(sprites, size):
     if size:
-        for i, spr in enumerate(sprites):
-            w, h = spr.image.size
-            image = Image.new(spr.image.mode, (w+size*2, h+size*2), (0,0,0,0))
-            A = spr.image.crop((0,  0,  1,1)).resize((size,size))
-            B = spr.image.crop((0,  0,  w,1)).resize((w,   size))
-            C = spr.image.crop((w-1,0,  w,1)).resize((size,size))
-            D = spr.image.crop((0,  0,  1,h)).resize((size,h   ))
-            E = spr.image.crop((w-1,0,  w,h)).resize((size,h   ))
-            F = spr.image.crop((0,  h-1,1,h)).resize((size,size))
-            G = spr.image.crop((0,  h-1,w,h)).resize((w,   size))
-            H = spr.image.crop((w-1,h-1,w,h)).resize((size,size))
-            image.paste(A, (0,     0     ), A)
-            image.paste(B, (size,  0     ), B)
-            image.paste(C, (size+w,0     ), C)
-            image.paste(D, (0,     size  ), D)
-            image.paste(E, (size+w,size  ), E)
-            image.paste(F, (0,     size+h), F)
-            image.paste(G, (size,  size+h), G)
-            image.paste(H, (size+w,size+h), H)
-            image.paste(spr.image, (size,size), spr.image)
-            spr.image = image
-            spr.w, spr.h = spr.image.size
+        with Timer('extrude sprites'):
+            for i, spr in enumerate(sprites):
+                w, h = spr.image.size
+                image = Image.new(spr.image.mode, (w+size*2, h+size*2), (0,0,0,0))
+                A = spr.image.crop((0,  0,  1,1)).resize((size,size))
+                B = spr.image.crop((0,  0,  w,1)).resize((w,   size))
+                C = spr.image.crop((w-1,0,  w,1)).resize((size,size))
+                D = spr.image.crop((0,  0,  1,h)).resize((size,h   ))
+                E = spr.image.crop((w-1,0,  w,h)).resize((size,h   ))
+                F = spr.image.crop((0,  h-1,1,h)).resize((size,size))
+                G = spr.image.crop((0,  h-1,w,h)).resize((w,   size))
+                H = spr.image.crop((w-1,h-1,w,h)).resize((size,size))
+                image.paste(A, (0,     0     ), A)
+                image.paste(B, (size,  0     ), B)
+                image.paste(C, (size+w,0     ), C)
+                image.paste(D, (0,     size  ), D)
+                image.paste(E, (size+w,size  ), E)
+                image.paste(F, (0,     size+h), F)
+                image.paste(G, (size,  size+h), G)
+                image.paste(H, (size+w,size+h), H)
+                image.paste(spr.image, (size,size), spr.image)
+                spr.image = image
+                spr.w, spr.h = spr.image.size
+
     return sprites
 
 ################################################################################
 
 def pad_sprites(sprites, size):
     if size:
-        for i, spr in enumerate(sprites):
-            w, h = spr.image.size
-            image = Image.new(spr.image.mode, (w+size, h+size), (0,0,0,0))
-            image.paste(spr.image, (0, 0), spr.image)
-            spr.image = image
-            spr.w, spr.h = spr.image.size
+        with Timer('pad sprites'):
+            for i, spr in enumerate(sprites):
+                w, h = spr.image.size
+                image = Image.new(spr.image.mode, (w+size, h+size), (0,0,0,0))
+                image.paste(spr.image, (0, 0), spr.image)
+                spr.image = image
+                spr.w, spr.h = spr.image.size
+
     return sprites
 
 ################################################################################
 
 def sort_sprites(sprites, attr, rotate=False):
-    if attr == 'width' or attr == 'width-desc':
-        if rotate:
-            for spr in sprites:
-                if spr.h > spr.w:
-                    spr.rotate()
-        sprites.sort(key=lambda s: s.width, reverse=True)
-    elif attr == 'width-asc':
-        if rotate:
-            for spr in sprites:
-                if spr.h > spr.w:
-                    spr.rotate()
-        sprites.sort(key=lambda s: s.width, reverse=False)
-    elif attr == 'height' or attr == 'height-desc':
-        if rotate:
-            for spr in sprites:
-                if spr.w > spr.h:
-                    spr.rotate()
-        sprites.sort(key=lambda s: s.height, reverse=True)
-    elif attr == 'height-asc':
-        if rotate:
-            for spr in sprites:
-                if spr.w > spr.h:
-                    spr.rotate()
-        sprites.sort(key=lambda s: s.height, reverse=False)
-    elif attr == 'area' or attr == 'area-desc':
-        sprites.sort(key=lambda s: s.width * s.height, reverse=True)
-    elif attr == 'area-asc':
-        sprites.sort(key=lambda s: s.width * s.height, reverse=False)
-    elif attr == 'name' or attr == 'name-asc':
-        sprites.sort(key=lambda s: s.name, reverse=False)
-    elif attr == 'name-desc':
-        sprites.sort(key=lambda s: s.name, reverse=True)
+    with Timer('sort sprites'):
+        if attr == 'width' or attr == 'width-desc':
+            if rotate:
+                for spr in sprites:
+                    if spr.h > spr.w:
+                        spr.rotate()
+
+            sprites.sort(key=lambda s: s.width, reverse=True)
+
+        elif attr == 'width-asc':
+            if rotate:
+                for spr in sprites:
+                    if spr.h > spr.w:
+                        spr.rotate()
+
+            sprites.sort(key=lambda s: s.width, reverse=False)
+
+        elif attr == 'height' or attr == 'height-desc':
+            if rotate:
+                for spr in sprites:
+                    if spr.w > spr.h:
+                        spr.rotate()
+
+            sprites.sort(key=lambda s: s.height, reverse=True)
+
+        elif attr == 'height-asc':
+            if rotate:
+                for spr in sprites:
+                    if spr.w > spr.h:
+                        spr.rotate()
+
+            sprites.sort(key=lambda s: s.height, reverse=False)
+
+        elif attr == 'area' or attr == 'area-desc':
+            sprites.sort(key=lambda s: s.width * s.height, reverse=True)
+
+        elif attr == 'area-asc':
+            sprites.sort(key=lambda s: s.width * s.height, reverse=False)
+
+        elif attr == 'name' or attr == 'name-asc':
+            sprites.sort(key=lambda s: s.name, reverse=False)
+
+        elif attr == 'name-desc':
+            sprites.sort(key=lambda s: s.name, reverse=True)
+
     return sprites
 
 ################################################################################
@@ -363,29 +384,31 @@ def quantize_texture(texture, quantize, palette_type, palette_depth, dither):
         ## unsupported method
         return texture
 
-    if palette_type == 'web-safe':
-        colors = 216
-        palette = ''.join([
-            '%c%c%c' % (0x33*r, 0x33*g, 0x33*b)
-            for r in xrange(6)
-                for g in xrange(6)
-                    for b in xrange(6)
-            ])
+    with Timer('quantize texture'):
+        if palette_type == 'web-safe':
+            colors = 216
+            palette = ''.join([
+                '%c%c%c' % (0x33*r, 0x33*g, 0x33*b)
+                for r in xrange(6)
+                    for g in xrange(6)
+                        for b in xrange(6)
+                ])
 
-    else:
-        palette = [0,0,0]*colors
-        ## TODO: generate palette
+        else:
+            palette = [0,0,0]*colors
+            ## TODO: generate palette
 
-    palimg = Image.new('P', (1,1))
-    palimg.putpalette(palette, 'RGB')
+        palimg = Image.new('P', (1,1))
+        palimg.putpalette(palette, 'RGB')
 
-    bands = texture.split()
+        bands = texture.split()
 
-    rgb = Image.merge('RGB', bands[:3])
-    alpha = bands[3]
+        rgb = Image.merge('RGB', bands[:3])
+        alpha = bands[3]
 
-    texture = rgb.quantize(colors, method, 0, palimg)
-    texture.putalpha(alpha)
+        texture = rgb.quantize(colors, method, 0, palimg)
+        texture.putalpha(alpha)
+
     return texture
 
 ################################################################################
@@ -503,9 +526,8 @@ def main(*argv):
     ########################################################################
     ## Phase 1 - Load and process individual sprites
 
-    with Timer('load sprites'):
-        sprites = load_sprites(args.sprites)
-        aliased = []
+    sprites = load_sprites(args.sprites)
+    aliased = []
 
     if not sprites:
         parser.error('No sprites found.')
