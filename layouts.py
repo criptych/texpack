@@ -75,6 +75,7 @@ class ShelfLayout(Layout):
             else:
                 tw, th = spr.w, spr.h
                 rotated = False
+
             if sh.size + tw <= maxw and th <= sh.max:
                 score = (maxw - sh.size - tw) * sh.max + tw * (sh.max - th)
                 if best is None or score < best:
@@ -184,24 +185,89 @@ class MaxRectsLayout(Layout):
 
     def clear(self):
         w, h = self.sheet.size
+        self.used_rects = []
         self.free_rects = [Rect(w, h)]
 
-    def split(self, rect):
-        # for free in self.free_rects:
-            # if free.intersects(rect):
-                # self.free_rects.remove( free )
-                # self.free_rects.append( split1 )
-                # self.free_rects.append( split2 )
+    def search(self, rect):
+        bssf, blsf = None, None
+        rotate = False
+        best = None
 
-        # for free1 in self.free_rects:
-            # for free2 in self.free_rects:
-                # if free1 != free2 and free1.contains(free2):
-                    # self.free_rects.remove(free2)
+        for free in self.free_rects:
+            if free.w >= rect.w and free.h >= rect.h:
+                dx, dy = free.w - rect.w, free.h - rect.h
+                ssf, lsf = min(dx, dy), max(dx, dy)
 
-        pass
+                if best is None or ssf < bssf or (ssf == bssf and lsf < blsf):
+                    best = Rect(rect.w, rect.h, free.x, free.y)
+                    bssf, blsf = ssf, lsf
+
+            if self.sheet.rotate and free.h >= rect.w and free.w >= rect.h:
+                dx, dy = free.w - rect.h, free.h - rect.w
+                ssf, lsf = min(dx, dy), max(dx, dy)
+
+                if best is None or ssf < bssf or (ssf == bssf and lsf < blsf):
+                    best = Rect(rect.h, rect.w, free.x, free.y)
+                    bssf, blsf = ssf, lsf
+                    rotate = True
+
+        return best, rotate
+
+    def split(self, free, rect):
+        if (rect.x >= free.x + free.w or rect.x + rect.w <= free.x or
+            rect.y >= free.y + free.h or rect.y + rect.h <= free.y):
+            return False;
+
+        if (rect.x < free.x + free.w and rect.x + rect.w > free.x):
+            ## New node at the top side of the used node.
+            if (rect.y > free.y and rect.y < free.y + free.h):
+                new = free.copy();
+                new.h = rect.y - new.y;
+                self.free_rects.append(new);
+
+            ## New node at the bottom side of the used node.
+            if (rect.y + rect.h < free.y + free.h):
+                new = free.copy();
+                new.y = rect.y + rect.h;
+                new.h = free.y + free.h - (rect.y + rect.h);
+                self.free_rects.append(new);
+
+        if (rect.y < free.y + free.h and rect.y + rect.h > free.y):
+            ## New node at the left side of the used node.
+            if (rect.x > free.x and rect.x < free.x + free.w):
+                new = free.copy();
+                new.w = rect.x - new.x;
+                self.free_rects.append(new);
+
+            ## New node at the right side of the used node.
+            if (rect.x + rect.w < free.x + free.w):
+                new = free.copy();
+                new.x = rect.x + rect.w;
+                new.w = free.x + free.w - (rect.x + rect.w);
+                self.free_rects.append(new);
+
+        return True
+
 
     def add(self, spr):
-        raise NotImplementedError('MaxRectsLayout is not implemented')
+        # raise NotImplementedError('MaxRectsLayout is not implemented')
+
+        ## find position
+
+        ## split free nodes
+        for free in self.free_rects:
+            if free.intersects(spr):
+                if self.split(free, spr):
+                    self.free_rects.remove( free )
+
+        ## prune free list
+        for free1 in self.free_rects:
+            for free2 in self.free_rects:
+                if free1 != free2 and free1.contains(free2):
+                    self.free_rects.remove(free2)
+
+        self.used_rects.append(spr)
+        return True
 
 ################################################################################
 

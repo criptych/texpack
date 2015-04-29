@@ -77,6 +77,9 @@ class Rect(object):
     def empty(self):
         return self.w <= 0 and self.h <= 0
 
+    def copy(self):
+        return Rect(self.w, self.h, self.x, self.y)
+
     def intersects(self, rect):
         return self.x + self.w > rect.x and self.x < rect.x + rect.w and \
                self.y + self.h > rect.y and self.y < rect.y + rect.h
