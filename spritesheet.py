@@ -108,11 +108,15 @@ from PIL import ImageDraw
 import os
 
 class Sprite(Rect):
-    def __init__(self, filename, *args, **kwargs):
-        self.image = Image.open(filename).convert('RGBA')
-        self.pixels = self.image.load()
-        self.filename = filename
-        self.name = os.path.basename(filename)
+    def __init__(self, image, *args, **kwargs):
+        if str(image) == image:
+            self.filename = image
+            kwargs.setdefault('name', os.path.basename(image))
+            image = Image.open(image).convert('RGBA')
+
+        self.name = kwargs.get('name')
+        self.image = image
+        self.pixels = image.load() if image else None
         self.rotated = False
         self.x, self.y = 0, 0
 
