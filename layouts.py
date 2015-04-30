@@ -30,6 +30,9 @@ class Layout(object):
     def add(self, spr):
         raise NotImplementedError('use a subclass of Layout')
 
+    def debug_draw(self, image, draw):
+        pass
+
 ################################################################################
 
 class ShelfLayout(Layout):
@@ -268,6 +271,11 @@ class MaxRectsLayout(Layout):
 
         self.used_rects.append(spr)
         return True
+
+    def debug_draw(self, image, draw):
+        for r in self.free_rects:
+            x0, y0, x1, y1 = r.left, r.top, r.right, r.bottom
+            draw.rectangle((x0, y0, x1, y1), None, '#0000ff')
 
 ################################################################################
 

@@ -233,9 +233,9 @@ class Sheet(object):
         if self.layout_type:
             if sprites is None:
                 sprites = self.sprites
-            layout = self.layout_type(self)
+            self.layout = self.layout_type(self)
             for spr in sprites:
-                if layout.add(spr):
+                if self.layout.add(spr):
                     placed.append(spr)
                 else:
                     remain.append(spr)
@@ -274,6 +274,8 @@ class Sheet(object):
                 if hasattr(spr, 'alias'):
                     y0 += draw.textsize(spr.alias.name)[1]
                     draw.text((x0+2, y0+2), spr.alias.name, color)
+
+            self.layout.debug_draw(texture, draw)
 
         return texture
 
