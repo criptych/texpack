@@ -11,6 +11,9 @@
 
 __all__ = ['get_layout']
 
+import logging
+log = logging.getLogger(__name__)
+
 from spritesheet import Rect
 
 ################################################################################

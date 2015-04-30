@@ -14,8 +14,9 @@
 ################################################################################
 
 import logging
+log = logging.getLogger(__name__)
+
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger('texpack')
 
 import math
 import os
@@ -594,9 +595,9 @@ def main(*argv):
                 sheets.append(sheet)
 
     if sprites:
-        print "Could not place:"
+        log.warn("Could not place:")
         for spr in sprites:
-            print '\t', spr.name
+            log.warn("\t%s", spr.name)
 
     ########################################################################
     ## Phase 3 - Scale, quantize, and compress textures
@@ -605,24 +606,25 @@ def main(*argv):
         ## do main process twice:
         ##   first with filename suffix '@2x',
         ##   then with sheets at half scale
-        print "Warning: --scale is not implemented"
+        log.warn("Warning: --scale is not implemented")
 
     if args.compress:
         ## ignore most of the other options and generate compressed textures
-        print "Warning: --compress is not implemented"
+        log.warn("Warning: --compress is not implemented")
 
     numsheets = len(sheets)
 
     if numsheets > 0:
         digits = int(math.floor(math.log10(numsheets))+1)
 
-        print numsheets, 'sheet(s):'
+        log.info('%d sheet%s', numsheets, ':' if numsheets == 1 else 's:')
 
         path = os.path.dirname(args.prefix)
         if path and not os.path.isdir(path):
             os.makedirs(path)
 
     else:
+        log.warning('%d sheets', numsheets)
         digits = 0
 
     with Timer('save sheets'):
@@ -647,8 +649,12 @@ def main(*argv):
                 encrypt_data(texname, args.encrypt, args.key, args.key_hash, args.key_file)
                 encrypt_data(idxname, args.encrypt, args.key, args.key_hash, args.key_file)
 
-            print '\t', texname, '(%dx%d, %d sprites, %.1f%% coverage)' % (
-                sheet.size[0], sheet.size[1], len(sheet.sprites), 100*sheet.coverage)
+            log.info("\t%s (%dx%d, %d sprites, %.1f%% coverage)",
+                texname, sheet.size[0], sheet.size[1], len(sheet.sprites),
+                100*sheet.coverage)
+
+            if sheet.coverage > 1.0:
+                log.warning('coverage > 1.0, overlapping sprites?')
 
 ################################################################################
 

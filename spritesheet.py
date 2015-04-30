@@ -5,6 +5,9 @@
 
 __all__ = ['Rect', 'Sprite', 'Sheet']
 
+import logging
+log = logging.getLogger(__name__)
+
 ################################################################################
 
 def get_next_power_of_2(n):
