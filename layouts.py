@@ -176,6 +176,12 @@ class StackLayout(Layout):
 
 ################################################################################
 
+from PIL import Image, ImageDraw
+import os
+
+if not os.path.isdir('maxdbg'):
+    os.makedirs('maxdbg')
+
 class MaxRectsLayout(Layout):
     """
     A layout that arranges rects by subdividing free space into overlapping
@@ -187,6 +193,8 @@ class MaxRectsLayout(Layout):
         w, h = self.sheet.size
         self.used_rects = []
         self.free_rects = [Rect(w, h)]
+
+        self.debug_image_count = 0
 
     def search(self, rect):
         bssf, blsf = None, None
@@ -248,23 +256,63 @@ class MaxRectsLayout(Layout):
 
         return True
 
-
     def add(self, spr):
         # raise NotImplementedError('MaxRectsLayout is not implemented')
 
         ## find position
+        pos, rotate = self.search(spr)
+
+        if not (pos and self.sheet.check(pos)):
+            return False
+
+        spr.x, spr.y = pos.x, pos.y
+        if rotate and self.sheet.rotate:
+            spr.rotate()
 
         ## split free nodes
-        for free in self.free_rects:
+        i = 0
+        while i < len(self.free_rects):
+            free = self.free_rects[i]
             if free.intersects(spr):
                 if self.split(free, spr):
-                    self.free_rects.remove( free )
+                    self.free_rects.pop(i)
+                    i -= 1
+            i += 1
 
         ## prune free list
-        for free1 in self.free_rects:
-            for free2 in self.free_rects:
+        i = 0
+        while i < len(self.free_rects):
+            free1 = self.free_rects[i]
+            j = i + 1
+            while j < len(self.free_rects):
+                free2 = self.free_rects[j]
                 if free1 != free2 and free1.contains(free2):
-                    self.free_rects.remove(free2)
+                    self.free_rects.pop(j)
+                    j -= 1
+                j += 1
+            i += 1
+
+        ################################################################
+
+        im = Image.new('RGB', self.sheet.size, (255,255,255))
+        draw = ImageDraw.Draw(im)
+
+        for i, free in enumerate(self.free_rects):
+            draw.rectangle((free.left, free.top, free.right, free.bottom), fill=(240,240,255), outline=(0,0,255))
+            draw.text((free.left+2, free.top+2), str(i), (0,0,255))
+
+        for used in self.used_rects:
+            draw.rectangle((used.left, used.top, used.right, used.bottom), fill=(255,240,240), outline=(0,0,0))
+
+        draw.rectangle((spr.left, spr.top, spr.right, spr.bottom), fill=(240,255,240), outline=(0,255,0))
+
+        for free in self.free_rects:
+            draw.rectangle((free.left, free.top, free.right, free.bottom), outline=(0,0,255))
+
+        im.save('maxdbg/%08d.png' % self.debug_image_count)
+        self.debug_image_count += 1
+
+        ################################################################
 
         self.used_rects.append(spr)
         return True
