@@ -76,14 +76,10 @@ class ShelfLayout(Layout):
 
         for sh in self.shelves:
             if self.sheet.rotate and (spr.w > spr.h) and (spr.w <= sh.max):
-                tw, th = spr.h, spr.w
-                rotated = True
-            else:
-                tw, th = spr.w, spr.h
-                rotated = False
+                spr.rotate()
 
-            if sh.size + tw <= maxw and th <= sh.max:
-                score = (maxw - sh.size - tw) * sh.max + tw * (sh.max - th)
+            if sh.size + spr.w <= maxw and spr.h <= sh.max:
+                score = (maxw - sh.size - spr.w) * sh.max + spr.w * (sh.max - spr.h)
                 if best is None or score < best:
                     best = score
                     shelf = sh
@@ -91,7 +87,8 @@ class ShelfLayout(Layout):
         if shelf is None:
             ## No room on existing shelves
 
-            rotated = False
+            if self.sheet.rotate and (spr.h > spr.w):
+                spr.rotate()
 
             if self.shelves and self.size + spr.h > maxh:
                 ## No room for new shelf
@@ -99,9 +96,6 @@ class ShelfLayout(Layout):
 
             shelf = self.Shelf(self.size)
             self.shelves.append(shelf)
-
-        if rotated:
-            spr.rotate()
 
         shelf.place(spr)
 
