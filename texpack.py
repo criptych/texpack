@@ -523,7 +523,7 @@ def main(*argv):
     args = parser.parse_args(argv)
 
     if args.verbose:
-        log.setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(logging.DEBUG)
 
     ########################################################################
     ## Phase 1 - Load and process individual sprites

@@ -321,6 +321,8 @@ class MaxRectsLayout(Layout):
                 for free1 in self.free_rects)
             ]
 
+        log.debug('%r', sprite)
+        self.used_rects.append(sprite)
         return True
 
     def debug_draw(self, image, draw):

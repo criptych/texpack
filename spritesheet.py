@@ -212,6 +212,7 @@ class Sheet(object):
             h = get_next_power_of_2(h)
 
         self.size = w, h
+        log.debug('grow to %dx%d', w, h)
         return w > oldw or h > oldh
 
     def checkw(self, rect):
@@ -255,9 +256,11 @@ class Sheet(object):
         return remain
 
     def prepare(self, debug=None):
+        log.debug('\t%r', self.size)
         texture = Image.new('RGBA', self.size) # args.color_depth
 
         for spr in self.sprites:
+            log.debug('\t%r %r %r %r', (spr.x, spr.y, spr.w, spr.h), spr.image.size, spr.image.mode, spr.rotated)
             texture.paste(spr.image, (spr.x, spr.y), spr.image)
 
         if debug:
