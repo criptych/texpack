@@ -129,11 +129,9 @@ class Sprite(Rect):
     @property
     def image(self):
         if self.rotated:
-            try:
-                return self._rimage
-            except AttributeError:
+            if not hasattr(self, '_rimage') or self._rimage is None:
                 self._rimage = self._image.transpose(Image.ROTATE_90)
-                return self._rimage
+            return self._rimage
         else:
             return self._image
 
