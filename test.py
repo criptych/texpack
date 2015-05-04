@@ -87,7 +87,6 @@ class LayoutTest(unittest.TestCase):
     def test_layout_stack(self):
         texpack.main("test/test_layout_stack_", "test-sprites", "--layout=stack")
 
-    @unittest.expectedFailure # remove when implemented
     def test_layout_maxrects(self):
         texpack.main("test/test_layout_maxrects_", "test-sprites", "--layout=max-rects")
 
