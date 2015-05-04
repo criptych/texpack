@@ -672,7 +672,7 @@ def main(*argv):
                 encrypt_data(idxname, args.encrypt, args.key, args.key_hash, args.key_file)
 
             log.info("\t%s (%dx%d, %d sprites, %.1f%% coverage)",
-                texname, sheet.size[0], sheet.size[1], len(sheet.sprites),
+                texname, texture.size[0], texture.size[1], len(sheet.sprites),
                 100*sheet.coverage)
 
             if sheet.coverage > 1.0:
