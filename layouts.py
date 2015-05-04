@@ -30,8 +30,24 @@ class Layout(object):
     def clear(self):
         pass
 
-    def add(self, spr):
+    def get_best(self, sprites):
         raise NotImplementedError('use a subclass of Layout')
+
+    def place(self, sprite, position, rotate=False):
+        raise NotImplementedError('use a subclass of Layout')
+
+    def add(self, *sprites):
+        placed = []
+        remain = list(sprites)
+
+        while remain:
+            i, pos, rot = self.get_best(remain)
+            if i is not None and self.place(remain[i], pos, rot):
+                placed.append(remain.pop(i))
+            else:
+                break ## No remaining sprites could be placed
+
+        return placed, remain
 
     def debug_draw(self, image, draw):
         pass
@@ -65,41 +81,56 @@ class ShelfLayout(Layout):
         self.size = 0
         self.shelves = []
 
-    def add(self, spr):
+    def get_best(self, sprites):
         maxw, maxh = self.sheet.size
 
-        if spr.w > maxw or spr.h > maxh:
-            return False
+        best = None, None, None
+        best_score = None
 
-        best = None
-        shelf = None
+        for i, spr in enumerate(sprites):
+            if spr.w > maxw or spr.h > maxh:
+                continue
 
-        for sh in self.shelves:
-            if self.sheet.rotate and (spr.w > spr.h) and (spr.w <= sh.max):
-                spr.rotate()
+            best_shelf = None
 
-            if sh.size + spr.w <= maxw and spr.h <= sh.max:
-                score = (maxw - sh.size - spr.w) * sh.max + spr.w * (sh.max - spr.h)
-                if best is None or score < best:
-                    best = score
-                    shelf = sh
+            for shelf in self.shelves:
+                if self.sheet.rotate and (spr.w > spr.h) and (spr.w <= shelf.max):
+                    spr.rotate()
 
-        if shelf is None:
-            ## No room on existing shelves
+                if shelf.size + spr.w <= maxw and spr.h <= shelf.max:
+                    score = (maxw - shelf.size - spr.w) * shelf.max + spr.w * (shelf.max - spr.h)
+                    if best_shelf is None or score < best_shelf[1]:
+                        best_shelf = shelf, score
 
-            if self.sheet.rotate and (spr.h > spr.w):
-                spr.rotate()
+            if best_shelf is None:
+                ## No room on existing shelves
 
-            if self.shelves and self.size + spr.h > maxh:
-                ## No room for new shelf
-                return False
+                if self.sheet.rotate and (spr.h > spr.w):
+                    spr.rotate()
 
-            shelf = self.Shelf(self.size)
-            self.shelves.append(shelf)
+                if self.shelves and self.size + spr.h > maxh:
+                    ## No room for new shelf
+                    continue
 
-        shelf.place(spr)
+                score = (maxw - spr.w) * spr.h
+                best_shelf = self.Shelf(self.size), score
+
+            if best_score is None or best_shelf[1] < best_score:
+                best = i, best_shelf[0], spr.rotated
+                best_score = best_shelf[1]
+
+        return best
+
+    def place(self, sprite, shelf, rotate=False):
+        if sprite.rotated ^ rotate:
+            sprite.rotate()
+
+        shelf.place(sprite)
 
         self.size = max(self.size, shelf.start + shelf.max)
+
+        if shelf not in self.shelves:
+            self.shelves.append(shelf)
 
         return True
 
@@ -219,7 +250,7 @@ class MaxRectsLayout(Layout):
                     bssf, blsf = ssf, lsf
                     rotate = True
 
-        return best, rotate
+        return best, bssf, blsf, rotate
 
     def split(self, free, rect):
         if (rect.x >= free.x + free.w or rect.x + rect.w <= free.x or
@@ -256,65 +287,52 @@ class MaxRectsLayout(Layout):
 
         return True
 
-    def add(self, spr):
-        # raise NotImplementedError('MaxRectsLayout is not implemented')
+    def get_best(self, sprites):
+        maxw, maxh = self.sheet.size
 
-        ## find position
-        pos, rotate = self.search(spr)
+        best = None, None, None
+        best_score = None
 
-        if not (pos and self.sheet.check(pos)):
+        for i, spr in enumerate(sprites):
+            ## find position
+            pos, bssf, blsf, rotate = self.search(spr)
+
+            if not (pos and self.sheet.check(pos)):
+                continue
+
+            if rotate:
+                if self.sheet.rotate:
+                    spr.rotate()
+                else:
+                    continue
+
+            if best_score is None or (bssf, blsf) < best_score:
+                best = i, pos, spr.rotated
+                best_score = bssf, blsf
+
+        return best
+
+    def place(self, sprite, position, rotate=False):
+        sprite.x, sprite.y = position.x, position.y
+
+        if not self.sheet.check(sprite):
             return False
 
-        spr.x, spr.y = pos.x, pos.y
-        if rotate and self.sheet.rotate:
-            spr.rotate()
+        if sprite.rotated ^ rotate:
+            sprite.rotate()
 
         ## split free nodes
-        i = 0
-        while i < len(self.free_rects):
-            free = self.free_rects[i]
-            if free.intersects(spr):
-                if self.split(free, spr):
-                    self.free_rects.pop(i)
-                    i -= 1
-            i += 1
+        for i, free in reversed(list(enumerate(self.free_rects))):
+            if free.intersects(sprite) and self.split(free, sprite):
+                self.free_rects.pop(i)
 
         ## prune free list
-        i = 0
-        while i < len(self.free_rects):
-            free1 = self.free_rects[i]
-            j = i + 1
-            while j < len(self.free_rects):
-                free2 = self.free_rects[j]
-                if free1 != free2 and free1.contains(free2):
-                    self.free_rects.pop(j)
-                    j -= 1
-                j += 1
-            i += 1
+        self.free_rects[:] = [
+            free2 for free2 in self.free_rects if not any(
+                free1 != free2 and free1.contains(free2)
+                for free1 in self.free_rects)
+            ]
 
-        ################################################################
-
-        im = Image.new('RGB', self.sheet.size, (255,255,255))
-        draw = ImageDraw.Draw(im)
-
-        for i, free in enumerate(self.free_rects):
-            draw.rectangle((free.left, free.top, free.right, free.bottom), fill=(240,240,255), outline=(0,0,255))
-            draw.text((free.left+2, free.top+2), str(i), (0,0,255))
-
-        for used in self.used_rects:
-            draw.rectangle((used.left, used.top, used.right, used.bottom), fill=(255,240,240), outline=(0,0,0))
-
-        draw.rectangle((spr.left, spr.top, spr.right, spr.bottom), fill=(240,255,240), outline=(0,255,0))
-
-        for free in self.free_rects:
-            draw.rectangle((free.left, free.top, free.right, free.bottom), outline=(0,0,255))
-
-        im.save('maxdbg/%08d.png' % self.debug_image_count)
-        self.debug_image_count += 1
-
-        ################################################################
-
-        self.used_rects.append(spr)
         return True
 
     def debug_draw(self, image, draw):

@@ -237,11 +237,7 @@ class Sheet(object):
             if sprites is None:
                 sprites = self.sprites
             self.layout = self.layout_type(self)
-            for spr in sprites:
-                if self.layout.add(spr):
-                    placed.append(spr)
-                else:
-                    remain.append(spr)
+            placed, remain = self.layout.add(*sprites)
 
         return placed, remain
 
@@ -289,4 +285,8 @@ class Sheet(object):
         for spr in self.sprites:
             used += spr.w * spr.h
         return float(used) / float(area)
+
+################################################################################
+## EOF
+################################################################################
 
