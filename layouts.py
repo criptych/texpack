@@ -87,19 +87,19 @@ class ShelfLayout(Layout):
         else:
             return self.sheet.rotate and (spr.h > spr.w)
 
-    def score(self, spr, shelf, max):
+    def score(self, spr, shelf, mx):
         if shelf:
-            if shelf.size + spr.w <= max and spr.h <= shelf.max:
-                return (max - shelf.size - spr.w) * shelf.max + \
+            if shelf.size + spr.w <= mx and spr.h <= shelf.max:
+                return (mx - shelf.size - spr.w) * shelf.max + \
                         spr.w * (shelf.max - spr.h)
         else:
-            if self.size + spr.h <= max:
-                return (max - spr.w) * spr.h
+            if self.size + spr.h <= mx:
+                return (mx - spr.w) * spr.h
 
-    def score_rotate(self, spr, shelf, max):
+    def score_rotate(self, spr, shelf, mx):
         rotate = self.should_rotate(spr, shelf)
         if rotate: spr.rotate()
-        return self.score(spr, shelf, max), rotate
+        return self.score(spr, shelf, mx), rotate
 
     def get_best(self, sprites):
         maxw, maxh = self.sheet.size
@@ -184,18 +184,17 @@ class StackLayout(ShelfLayout):
         else:
             return self.sheet.rotate and (spr.w > spr.h)
 
-    def score(self, spr, shelf, max):
+    def score(self, spr, shelf, mx):
         if shelf:
-            if shelf.size + spr.h <= max and spr.w <= shelf.max:
-                return (max - shelf.size - spr.h) * shelf.max + \
+            if shelf.size + spr.h <= mx and spr.w <= shelf.max:
+                return (mx - shelf.size - spr.h) * shelf.max + \
                         spr.h * (shelf.max - spr.w)
         else:
-            if self.size + spr.w <= max:
-                return (max - spr.h) * spr.w
+            if self.size + spr.w <= mx:
+                return (mx - spr.h) * spr.w
 
 ################################################################################
 
-from PIL import Image, ImageDraw
 import os
 
 if not os.path.isdir('maxdbg'):
@@ -212,7 +211,6 @@ class MaxRectsLayout(Layout):
         w, h = self.sheet.size
         self.used_rects = []
         self.free_rects = [Rect(w, h)]
-
         self.debug_image_count = 0
 
     def search(self, rect):
@@ -243,41 +241,39 @@ class MaxRectsLayout(Layout):
     def split(self, free, rect):
         if (rect.x >= free.x + free.w or rect.x + rect.w <= free.x or
             rect.y >= free.y + free.h or rect.y + rect.h <= free.y):
-            return False;
+            return False
 
         if (rect.x < free.x + free.w and rect.x + rect.w > free.x):
             ## New node at the top side of the used node.
             if (rect.y > free.y and rect.y < free.y + free.h):
-                new = free.copy();
-                new.h = rect.y - new.y;
-                self.free_rects.append(new);
+                new = free.copy()
+                new.h = rect.y - new.y
+                self.free_rects.append(new)
 
             ## New node at the bottom side of the used node.
             if (rect.y + rect.h < free.y + free.h):
-                new = free.copy();
-                new.y = rect.y + rect.h;
-                new.h = free.y + free.h - (rect.y + rect.h);
-                self.free_rects.append(new);
+                new = free.copy()
+                new.y = rect.y + rect.h
+                new.h = free.y + free.h - (rect.y + rect.h)
+                self.free_rects.append(new)
 
         if (rect.y < free.y + free.h and rect.y + rect.h > free.y):
             ## New node at the left side of the used node.
             if (rect.x > free.x and rect.x < free.x + free.w):
-                new = free.copy();
-                new.w = rect.x - new.x;
-                self.free_rects.append(new);
+                new = free.copy()
+                new.w = rect.x - new.x
+                self.free_rects.append(new)
 
             ## New node at the right side of the used node.
             if (rect.x + rect.w < free.x + free.w):
-                new = free.copy();
-                new.x = rect.x + rect.w;
-                new.w = free.x + free.w - (rect.x + rect.w);
-                self.free_rects.append(new);
+                new = free.copy()
+                new.x = rect.x + rect.w
+                new.w = free.x + free.w - (rect.x + rect.w)
+                self.free_rects.append(new)
 
         return True
 
     def get_best(self, sprites):
-        maxw, maxh = self.sheet.size
-
         best = None, None, None
         best_score = None
 
@@ -336,7 +332,10 @@ class SkylineLayout(Layout):
     """
     """
 
-    def add(self, spr):
+    def get_best(self, sprites):
+        raise NotImplementedError('SkylineLayout is not implemented')
+
+    def place(self, sprite, position, rotate=False):
         raise NotImplementedError('SkylineLayout is not implemented')
 
 ################################################################################

@@ -24,8 +24,6 @@ import os
 from PIL import Image
 from PIL import ImageChops
 from PIL import ImageColor
-from PIL import ImageDraw
-from PIL import ImageOps
 
 from layouts import get_layout
 from spritesheet import Sprite, Sheet
@@ -68,6 +66,8 @@ class Timer(object):
     def __init__(self, name='Timer', callback=None):
         self.name = name
         self.callback = callback
+        self.start = None
+        self.finish = None
 
     def __enter__(self):
         self.start = datetime.datetime.now()
@@ -94,7 +94,7 @@ def load_sprites(filenames):
             for f in glob(fn):
                 f = os.path.abspath(f)
                 if os.path.isdir(f):
-                    for root, dirs, files in os.walk(f):
+                    for root, _, files in os.walk(f):
                         for ff in files:
                             try:
                                 r.append(Sprite(os.path.join(root, ff)))
@@ -126,17 +126,11 @@ def _mask_bottomright(A,B,C,D):
     return D
 
 def _mask_2of4(A,B,C,D):
-    if A == B and C != D:
+    if (A == B and C != D) or (A == C and B != D) or (A == D and B != C):
         return A
-    if A == C and B != D:
-        return A
-    if A == D and B != C:
-        return A
-    if B == C and A != D:
+    if (B == C and A != D) or (B == D and A != C):
         return B
-    if B == D and A != C:
-        return B
-    if C == D and A != B:
+    if (C == D and A != B):
         return C
     return None
 
@@ -173,7 +167,7 @@ def mask_sprites(sprites, color):
         mask_func = lambda A,B,C,D: color
 
     with Timer('mask sprites'):
-        for i, spr in enumerate(sprites):
+        for spr in sprites:
             w, h = spr.image.size
 
             ## Get corner colors
@@ -190,7 +184,7 @@ def mask_sprites(sprites, color):
             ## based on:
             ## <https://mail.python.org/pipermail/image-sig/2002-December/002092.html>
 
-            outbands = [srcband.point(lambda p: (p != level) and 255)
+            outbands = [srcband.point(lambda p, l=level: (p != l) and 255)
                         for srcband, level in zip(spr.image.split(), bg)]
             tband = ImageChops.lighter(
                 ImageChops.lighter(outbands[0], outbands[1]),
@@ -203,7 +197,7 @@ def mask_sprites(sprites, color):
 
 def trim_sprites(sprites):
     with Timer('trim sprites'):
-        for i, spr in enumerate(sprites):
+        for spr in sprites:
             box = spr.image.getbbox()
             spr.image = spr.image.crop(box)
 
@@ -217,7 +211,6 @@ def hash_sprites(sprites):
 ################################################################################
 
 def alias_sprites(sprites, tolerance=0):
-    n = 0
     aliased = []
 
     with Timer('alias sprites'):
@@ -238,8 +231,8 @@ def alias_sprites(sprites, tolerance=0):
                 if spr1.image.size != spr2.image.size:
                     return False
                 diff = ImageChops.difference(spr1.image, spr2.image)
-                for min, max in diff.getextrema():
-                    if (min > 0) or (max > 0):
+                for mn, mx in diff.getextrema():
+                    if (mn > 0) or (mx > 0):
                         return False
                 return True
 
@@ -253,7 +246,6 @@ def alias_sprites(sprites, tolerance=0):
                     sprites.pop(j)
                     spr2.alias = spr1
                     aliased.append(spr2)
-                    n += 1
 
     return sprites, aliased
 
@@ -262,7 +254,7 @@ def alias_sprites(sprites, tolerance=0):
 def extrude_sprites(sprites, size):
     if size:
         with Timer('extrude sprites'):
-            for i, spr in enumerate(sprites):
+            for spr in sprites:
                 w, h = spr.image.size
                 image = Image.new(spr.image.mode, (w+size*2, h+size*2), (0,0,0,0))
 
@@ -294,7 +286,7 @@ def extrude_sprites(sprites, size):
 def pad_sprites(sprites, size):
     if size:
         with Timer('pad sprites'):
-            for i, spr in enumerate(sprites):
+            for spr in sprites:
                 w, h = spr.image.size
                 image = Image.new(spr.image.mode, (w+size, h+size), (0,0,0,0))
                 image.paste(spr.image, (0, 0), spr.image)
@@ -306,49 +298,51 @@ def pad_sprites(sprites, size):
 
 def sort_sprites(sprites, attr, rotate=False):
     with Timer('sort sprites'):
-        if attr == 'width' or attr == 'width-desc':
+        def key_width(s):
+            return s.width
+
+        def key_height(s):
+            return s.height
+
+        def key_area(s):
+            return s.width * s.height
+
+        def key_name(s):
+            return s.name
+
+        def rotate_width():
             if rotate:
                 for spr in sprites:
                     if spr.h > spr.w:
                         spr.rotate()
 
-            sprites.sort(key=lambda s: s.width, reverse=True)
-
-        elif attr == 'width-asc':
-            if rotate:
-                for spr in sprites:
-                    if spr.h > spr.w:
-                        spr.rotate()
-
-            sprites.sort(key=lambda s: s.width, reverse=False)
-
-        elif attr == 'height' or attr == 'height-desc':
+        def rotate_height():
             if rotate:
                 for spr in sprites:
                     if spr.w > spr.h:
                         spr.rotate()
 
-            sprites.sort(key=lambda s: s.height, reverse=True)
+        sorters = {
+            'width': (key_width, rotate_width, True),
+            'width-desc': (key_width, rotate_width, True),
+            'width-asc': (key_width, rotate_width, False),
+            'height': (key_height, rotate_height, True),
+            'height-desc': (key_height, rotate_height, True),
+            'height-asc': (key_height, rotate_height, False),
+            'area': (key_area, None, True),
+            'area-desc': (key_area, None, True),
+            'area-asc': (key_area, None, False),
+            'name': (key_name, None, False),
+            'name-asc': (key_name, None, False),
+            'name-desc': (key_name, None, True),
+        }
 
-        elif attr == 'height-asc':
-            if rotate:
-                for spr in sprites:
-                    if spr.w > spr.h:
-                        spr.rotate()
+        key, rotator, reverse = sorters[attr]
 
-            sprites.sort(key=lambda s: s.height, reverse=False)
+        if rotator is not None:
+            rotator()
 
-        elif attr == 'area' or attr == 'area-desc':
-            sprites.sort(key=lambda s: s.width * s.height, reverse=True)
-
-        elif attr == 'area-asc':
-            sprites.sort(key=lambda s: s.width * s.height, reverse=False)
-
-        elif attr == 'name' or attr == 'name-asc':
-            sprites.sort(key=lambda s: s.name, reverse=False)
-
-        elif attr == 'name-desc':
-            sprites.sort(key=lambda s: s.name, reverse=True)
+        sprites.sort(key=key, reverse=reverse)
 
     return sprites
 
@@ -415,7 +409,12 @@ def quantize_texture(texture, quantize, palette_type, palette_depth, dither):
 
 ################################################################################
 
-def main(*argv):
+def encrypt_data(filename, method, key=None, key_hash=None, key_file=None):
+    pass
+
+################################################################################
+
+def build_arg_parser():
     import argparse
 
     parser = argparse.ArgumentParser(usage='%(prog)s prefix sprites... [options]')
@@ -520,19 +519,16 @@ def main(*argv):
 
     ########################################################################
 
-    args = parser.parse_args(argv)
+    return parser
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+################################################################################
 
-    ########################################################################
-    ## Phase 1 - Load and process individual sprites
+def load_and_process_sprites(args):
 
     sprites = load_sprites(args.sprites)
-    aliased = []
 
     if not sprites:
-        parser.error('No sprites found.')
+        raise ValueError('No sprites found.')
 
     if args.mask:
         ## Mask sprites against background color
@@ -567,8 +563,11 @@ def main(*argv):
     if args.sort:
         sprites = sort_sprites(sprites, args.sort, args.rotate)
 
-    ########################################################################
-    ## Phase 2 - Arrange sprites in sheets
+    return sprites
+
+################################################################################
+
+def build_sprite_sheets(args, sprites):
 
     sheets = []
 
@@ -598,6 +597,28 @@ def main(*argv):
         log.warn("Could not place:")
         for spr in sprites:
             log.warn("\t%s", spr.name)
+
+    return sheets
+
+################################################################################
+
+def main(*argv):
+    parser = build_arg_parser()
+
+    args = parser.parse_args(argv)
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    ########################################################################
+    ## Phase 1 - Load and process individual sprites
+
+    sprites = load_and_process_sprites(args)
+
+    ########################################################################
+    ## Phase 2 - Arrange sprites in sheets
+
+    sheets = build_sprite_sheets(args, sprites)
 
     ########################################################################
     ## Phase 3 - Scale, quantize, and compress textures

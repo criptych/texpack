@@ -115,6 +115,8 @@ import os
 
 class Sprite(Rect):
     def __init__(self, image, *args, **kwargs):
+        Rect.__init__(self, *args, **kwargs)
+
         if str(image) == image:
             self.filename = image
             kwargs.setdefault('name', os.path.basename(image))
@@ -122,7 +124,6 @@ class Sprite(Rect):
 
         self.name = kwargs.get('name')
         self.image = image
-        self.pixels = image.load() if image else None
         self.rotated = False
         self.x, self.y = 0, 0
 
@@ -147,15 +148,14 @@ class Sprite(Rect):
         self.w, self.h = self.h, self.w
 
 class Sheet(object):
-    def __init__(
-        self,
-        layout=None,
-        min_size=0,
-        max_size=0,
-        rotate=False,
-        npot=False,
-        square=False,
-    ):
+    def __init__(self, **kwargs):
+        layout = kwargs.get('layout')
+        min_size = kwargs.get('min_size', 0)
+        max_size = kwargs.get('max_size', 0)
+        rotate = kwargs.get('rotate', False)
+        npot = kwargs.get('npot', False)
+        square = kwargs.get('square', False)
+
         try:
             min_size = int(min_size)
             min_size = min_size, min_size
@@ -216,12 +216,12 @@ class Sheet(object):
         return w > oldw or h > oldh
 
     def checkw(self, rect):
-        w, h = self.size
+        w, _ = self.size
         rw = rect.x + rect.w
         return rw <= w
 
     def checkh(self, rect):
-        w, h = self.size
+        _, h = self.size
         rh = rect.y + rect.h
         return rh <= h
 
@@ -257,7 +257,24 @@ class Sheet(object):
 
     def prepare(self, debug=None):
         log.debug('\t%r', self.size)
-        texture = Image.new('RGBA', self.size) # args.color_depth
+
+        minw = max(spr.x+spr.w for spr in self.sprites)
+        minh = max(spr.y+spr.h for spr in self.sprites)
+
+        if self.square:
+            log.debug('enforce square texture')
+            minw = minh = max(minw, minh)
+        else:
+            log.debug('allow non-square texture')
+
+        if not self.npot:
+            log.debug('enforce POT texture')
+            minw = get_next_power_of_2(minw)
+            minh = get_next_power_of_2(minh)
+        else:
+            log.debug('allow NPOT texture')
+
+        texture = Image.new('RGBA', (minw, minh)) # args.color_depth
 
         for spr in self.sprites:
             log.debug('\t%r %r %r %r', (spr.x, spr.y, spr.w, spr.h), spr.image.size, spr.image.mode, spr.rotated)

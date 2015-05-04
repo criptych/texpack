@@ -1,5 +1,5 @@
 [MESSAGES CONTROL]
-disable=C
+disable=C,attribute-defined-outside-init,too-few-public-methods,unused-argument,fixme,too-many-instance-attributes,no-self-use
 
 [REPORTS]
 output-format=text
