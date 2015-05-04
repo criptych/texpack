@@ -61,7 +61,7 @@ class ShelfLayout(Layout):
     shelf, a new shelf is created at the top of the tallest item.
     """
 
-    class Shelf(object):
+    class Slice(object):
         def __init__(self, start=0, size=0):
             self.start = start
             self.size = size
@@ -79,7 +79,27 @@ class ShelfLayout(Layout):
 
     def clear(self):
         self.size = 0
-        self.shelves = []
+        self.slices = []
+
+    def should_rotate(self, spr, shelf):
+        if shelf:
+            return self.sheet.rotate and (spr.w > spr.h) and (spr.w <= shelf.max)
+        else:
+            return self.sheet.rotate and (spr.h > spr.w)
+
+    def score(self, spr, shelf, max):
+        if shelf:
+            if shelf.size + spr.w <= max and spr.h <= shelf.max:
+                return (max - shelf.size - spr.w) * shelf.max + \
+                        spr.w * (shelf.max - spr.h)
+        else:
+            if self.size + spr.h <= max:
+                return (max - spr.w) * spr.h
+
+    def score_rotate(self, spr, shelf, max):
+        rotate = self.should_rotate(spr, shelf)
+        if rotate: spr.rotate()
+        return self.score(spr, shelf, max), rotate
 
     def get_best(self, sprites):
         maxw, maxh = self.sheet.size
@@ -93,30 +113,27 @@ class ShelfLayout(Layout):
 
             best_shelf = None
 
-            for shelf in self.shelves:
-                if self.sheet.rotate and (spr.w > spr.h) and (spr.w <= shelf.max):
-                    spr.rotate()
+            for shelf in self.slices:
+                score, rotate = self.score_rotate(spr, shelf, maxw)
 
-                if shelf.size + spr.w <= maxw and spr.h <= shelf.max:
-                    score = (maxw - shelf.size - spr.w) * shelf.max + spr.w * (shelf.max - spr.h)
-                    if best_shelf is None or score < best_shelf[1]:
-                        best_shelf = shelf, score
+                if score is not None and (
+                    best_shelf is None or score < best_shelf[1]
+                ):
+                    best_shelf = shelf, score
 
             if best_shelf is None:
                 ## No room on existing shelves
 
-                if self.sheet.rotate and (spr.h > spr.w):
-                    spr.rotate()
+                score, rotate = self.score_rotate(spr, None, maxh)
 
-                if self.shelves and self.size + spr.h > maxh:
+                if self.slices and score is None:
                     ## No room for new shelf
                     continue
 
-                score = (maxw - spr.w) * spr.h
-                best_shelf = self.Shelf(self.size), score
+                best_shelf = self.Slice(self.size), score
 
             if best_score is None or best_shelf[1] < best_score:
-                best = i, best_shelf[0], spr.rotated
+                best = i, best_shelf[0], rotate ^ spr.rotated
                 best_score = best_shelf[1]
 
         return best
@@ -129,19 +146,19 @@ class ShelfLayout(Layout):
 
         self.size = max(self.size, shelf.start + shelf.max)
 
-        if shelf not in self.shelves:
-            self.shelves.append(shelf)
+        if shelf not in self.slices:
+            self.slices.append(shelf)
 
         return True
 
 ################################################################################
 
-class StackLayout(Layout):
+class StackLayout(ShelfLayout):
     """
     Like ShelfLayout, but arranges rects in columns.
     """
 
-    class Stack(object):
+    class Slice(object):
         def __init__(self, start=0, size=0):
             self.start = start
             self.size = size
@@ -159,51 +176,22 @@ class StackLayout(Layout):
 
     def clear(self):
         self.size = 0
-        self.stacks = []
+        self.slices = []
 
-    def add(self, spr):
-        w, h = spr.width, spr.height
-        maxw, maxh = self.sheet.size
+    def should_rotate(self, spr, shelf):
+        if shelf:
+            return self.sheet.rotate and (spr.h > spr.w) and (spr.h <= shelf.max)
+        else:
+            return self.sheet.rotate and (spr.w > spr.h)
 
-        if w > maxw or h > maxh:
-            return False
-
-        best = None
-        stack = None
-
-        for st in self.stacks:
-            if self.sheet.rotate and (h > w) and (h <= sh.max):
-                tw, th = h, w
-                rotated = True
-            else:
-                tw, th = w, h
-                rotated = False
-            if st.size + th <= maxh and tw <= st.max:
-                score = (maxh - st.size - th) * st.max + th * (st.max - tw)
-                if best is None or score < best:
-                    best = score
-                    stack = st
-
-        if stack is None:
-            ## No room in existing stacks
-
-            rotated = False
-
-            if self.stacks and self.size + tw > maxw:
-                ## No room for new stack
-                return False
-
-            stack = self.Stack(self.size)
-            self.stacks.append(stack)
-
-        if rotated:
-            spr.rotate()
-
-        stack.place(spr)
-
-        self.size = max(self.size, stack.start + stack.max)
-
-        return True
+    def score(self, spr, shelf, max):
+        if shelf:
+            if shelf.size + spr.h <= max and spr.w <= shelf.max:
+                return (max - shelf.size - spr.h) * shelf.max + \
+                        spr.h * (shelf.max - spr.w)
+        else:
+            if self.size + spr.w <= max:
+                return (max - spr.h) * spr.w
 
 ################################################################################
 
