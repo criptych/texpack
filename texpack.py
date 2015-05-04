@@ -60,6 +60,7 @@ def strfdelta(dt, fmt=None):
         .replace('%m', '%02d' % mn)
         .replace('%s', '%02d' % sc)
         .replace('%f', '%06d' % us)
+        .replace('%F', '%03d' % ms)
     )
 
 class Timer(object):
@@ -77,8 +78,8 @@ class Timer(object):
     def __exit__(self, *exc_info):
         self.finish = datetime.datetime.now()
         dt = self.finish - self.start
-        log.debug("%s: end: %s (%s)", self.name, self.finish.strftime('%H:%M:%S'),
-            strfdelta(dt))
+        log.debug("%s: end: %s", self.name, self.finish.strftime('%H:%M:%S'))
+        log.debug("%s: duration: %s", self.name, strfdelta(dt))
         if self.callback is not None:
             self.callback(dt)
 
