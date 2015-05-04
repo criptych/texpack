@@ -1,0 +1,14 @@
+[MESSAGES CONTROL]
+disable=C
+
+[REPORTS]
+output-format=text
+reports=yes
+
+[FORMAT]
+single-line-if-stmt=yes
+expected-line-ending-format=LF
+
+[MISCELLANEOUS]
+notes=FIXME,XXX,TODO
+
