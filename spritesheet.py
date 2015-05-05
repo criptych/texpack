@@ -181,12 +181,16 @@ class Sheet(object):
         self.sprites = []
         self.size = self.min_size
 
-    def grow(self):
+    def grow(self, gw=0, gh=0):
         maxw, maxh = self.max_size
         oldw, oldh = self.size
 
-        w = oldw * 2
-        h = oldh * 2
+        if gw or gh:
+            w = oldw + gw
+            h = oldh + gh
+        else:
+            w = oldw * 2
+            h = oldh * 2
 
         if maxw > 0 and w > maxw:
             w = maxw
@@ -232,7 +236,9 @@ class Sheet(object):
         placed, remain = self.do_layout(temp)
 
         while remain:
-            if not self.grow():
+            maxw = max(spr.w for spr in remain)
+            maxh = max(spr.h for spr in remain)
+            if not self.grow(maxw, maxh):
                 break
 
             placed, remain = self.do_layout(temp)
