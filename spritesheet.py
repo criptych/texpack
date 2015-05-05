@@ -260,7 +260,14 @@ class Sheet(object):
         else:
             log.debug('allow NPOT texture')
 
-        texture = Image.new('RGBA', (minw, minh)) # args.color_depth
+        self.size = minw, minh
+
+        log.debug('\t%r', self.size)
+
+        ## redo layout with final size
+        self.do_layout(self.sprites)
+
+        texture = Image.new('RGBA', self.size) # args.color_depth
 
         for spr in self.sprites:
             log.debug('\t%r %r %r %r', (spr.x, spr.y, spr.w, spr.h), spr.image.size, spr.image.mode, spr.rotated)
