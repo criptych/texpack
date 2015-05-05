@@ -665,18 +665,18 @@ def main(*argv):
             texname = outname + '.' + args.format
             idxname = outname + '.' + 'idx'
 
-            texture.save(texname)
-
-            if args.encrypt:
-                encrypt_data(texname, args.encrypt, args.key, args.key_hash, args.key_file)
-                encrypt_data(idxname, args.encrypt, args.key, args.key_hash, args.key_file)
-
             log.info("\t%s (%dx%d, %d sprites, %.1f%% coverage)",
                 texname, texture.size[0], texture.size[1], len(sheet.sprites),
                 100*sheet.coverage)
 
             if sheet.coverage > 1.0:
                 log.warning('coverage > 1.0, overlapping sprites?')
+
+            texture.save(texname)
+
+            if args.encrypt:
+                encrypt_data(texname, args.encrypt, args.key, args.key_hash, args.key_file)
+                encrypt_data(idxname, args.encrypt, args.key, args.key_hash, args.key_file)
 
 ################################################################################
 
