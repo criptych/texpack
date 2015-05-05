@@ -168,16 +168,6 @@ class Sheet(object):
         finally:
             pass
 
-        if not npot:
-            min_size = (
-                get_next_power_of_2(min_size[0]),
-                get_next_power_of_2(min_size[1])
-                )
-            max_size = (
-                get_next_power_of_2(max_size[0]),
-                get_next_power_of_2(max_size[1])
-                )
-
         self.layout_type = layout
         self.min_size = min_size
         self.max_size = max_size
@@ -206,10 +196,6 @@ class Sheet(object):
             h = maxh
         elif h < 1:
             h = 1
-
-        if not self.npot:
-            w = get_next_power_of_2(w)
-            h = get_next_power_of_2(h)
 
         self.size = w, h
         log.debug('grow to %dx%d', w, h)
