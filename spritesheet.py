@@ -230,8 +230,29 @@ class Sheet(object):
 
         return placed, remain
 
+    def guess_size(self, sprites):
+        minw, minh = 0, 0
+        area = 0
+
+        for spr in sprites:
+            area += spr.w * spr.h
+            if minw < spr.w: minw = spr.w
+            if minh < spr.h: minh = spr.h
+
+        w = h = int(area ** 0.5)
+
+        if w < minw: w = minw
+        if h < minh: h = minh
+
+        log.debug('guess starting size of %dx%d', w, h)
+
+        return w, h
+
     def add(self, sprites):
         temp = self.sprites + sprites
+
+        gw, gh = self.guess_size(temp)
+        self.grow(gw - self.size[0], gh - self.size[1])
 
         placed, remain = self.do_layout(temp)
 
